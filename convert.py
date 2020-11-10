@@ -14,34 +14,34 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 #     tf.config.experimental.set_visible_devices(devices=gpus[1], device_type='GPU')
     # tf.config.experimental.set_memory_growth(device=gpus[1], enable=True)
 
-# target = 'helmet'
-target = 'pedestrians'
+target = 'helmet'
+# target = 'pedestrians'
 
-backbone = 'mobilenetv2'
-# backbone = 'tiny'
+# backbone = 'mobilenetv2'
+backbone = 'tiny'
 
 flags.DEFINE_integer('branch_size',              2,               'branch size')
-flags.DEFINE_string('framework',                'tflite',          'define what framework do you want to convert (tf, trt, tflite)')
+flags.DEFINE_string('framework',                'tf',          'define what framework do you want to convert (tf, trt, tflite)')
 flags.DEFINE_string('quantization_type',        'int8',            'dynamic_range or float16 or int8 or None')
 
 if target == 'helmet':
     flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
     flags.DEFINE_string('quan_images',  'data/quan/helmet',                     'images to quan')
-    flags.DEFINE_string('anchors_file', 'data/anchors/helmet_tiny_anchors_540_960.txt',     'anchors file')
+    flags.DEFINE_string('anchors_file', 'data/anchors/helmet_540_960_6_anchors.txt',     'anchors file')
     flags.DEFINE_string('classes_file', 'data/classes/helmet.names',     'anchors file')
 
-    flags.DEFINE_string('ckpt',         'save/helmet/ckpt/tiny_yolov3_540_960/model_epoch50',  'path to weights file')
-    flags.DEFINE_string('tflite',       'save/helmet/tiny_yolov3_helmet540_960_int8_epoch50.tflite',          'path to save tflite')
-    flags.DEFINE_string('savePrefix',   'save/helmet/savedmodel/tiny_yolov3_540_960.h5',          'path to savedmodel')
+    flags.DEFINE_string('ckpt',         'save/helmet/ckpt/tiny_yolov3_540_960/model_final',  'path to weights file')
+    flags.DEFINE_string('tflite',       'save/helmet/tiny_yolov3_helmet540_960_fp32.tflite',          'path to save tflite')
+    flags.DEFINE_string('savePrefix',   'save/helmet/savedmodel/tiny_yolov3_540_960',          'path to savedmodel')
 elif target == 'pedestrians':
     flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
     flags.DEFINE_string('quan_images',  'data/quan/pedestrian1',                     'images to quan')
     flags.DEFINE_string('anchors_file', 'data/anchors/pedestrian_540_960_6_anchors.txt',     'anchors file')
     flags.DEFINE_string('classes_file', 'data/classes/pedestrian.names',     'classes file')
     if backbone == 'mobilenetv2':
-        flags.DEFINE_string('ckpt',         'save/pedestrian/ckpt/mobilenetv2_yolov3_540_960_new/model_epoch8',  'path to weights file')
-        flags.DEFINE_string('tflite',       'save/pedestrian/mobilenetv2_yolov3_540_960_new_int8_model_epoch8.tflite',          'path to save tflite')
-        flags.DEFINE_string('savePrefix',   'save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960_new',          'path to savedmodel')
+        flags.DEFINE_string('ckpt',         'save/pedestrian/ckpt/mobilenetv2_yolov3_540_960/model_final',  'path to weights file')
+        flags.DEFINE_string('tflite',       'save/pedestrian/mobilenetv2_yolov3_540_960_model_int8_epoch50_1.tflite',          'path to save tflite')
+        flags.DEFINE_string('savePrefix',   'save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960_epoch50',          'path to savedmodel')
     elif backbone == 'tiny':
         flags.DEFINE_string('ckpt',         'save/pedestrian/ckpt/tiny_yolov3_540_960_1W/model_final',  'path to weights file')
         flags.DEFINE_string('tflite',       'save/pedestrian/tiny_yolov3_pedstrian_540_960_int8_epoch50.tflite',          'path to save tflite')
@@ -139,8 +139,8 @@ def convert_tflite_from_keras(TFLiteFile, kerasH5File=None):
 
 def main(_argv):
     if FLAGS.framework == 'tflite':
-        convert_tflite_from_savedmodel(FLAGS.tflite)
-        # convert_tflite_from_keras(FLAGS.tflite)
+        # convert_tflite_from_savedmodel(FLAGS.tflite)      #转换得到的tflite的input和output为fp32
+        convert_tflite_from_keras(FLAGS.tflite)             #转换得到的tflite input和output为uint8
     elif FLAGS.framework == 'tf':
         model = getModelformCheckpoint(True)
         model.save(FLAGS.savePrefix)

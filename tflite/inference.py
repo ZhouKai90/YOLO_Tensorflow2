@@ -10,23 +10,21 @@ import argparse
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 EDGETPU_SHARED_LIB = "libedgetpu.so.1"
 
-# detection_type = 'helmet'
-detection_type = 'pedestrian'
+detection_type = 'helmet'
+# detection_type = 'pedestrian'
 
 parser = argparse.ArgumentParser("Run TF-Lite YOLO-V3 Tiny inference.")
 parser.add_argument("--branch", default=2, type=int, help="branch size")
 
 if detection_type == 'helmet':
     parser.add_argument("--model", default='../save/helmet/tiny_yolov3_helmet540_960_epoch50.tflite', type=str, help="Model to load.")
-    parser.add_argument("--anchors", default='../data/anchors/helmet_tiny_anchors_540_960.txt', type=str, help="Anchors file.")
+    parser.add_argument("--anchors", default='../data/anchors/helmet_540_960_6_anchors.txt', type=str, help="Anchors file.")
     parser.add_argument("--classes", default='../data/classes/helmet.names', type=str, help="Classes (.names) file.")
-    parser.add_argument("--classes_num", default=2, type=int, help="classes num")
 
 elif detection_type == 'pedestrian':
-    parser.add_argument("--model", default='../save/pedestrian/mobilenetv2_yolov3_540_960_new_model_epoch28.tflite', type=str, help="Model to load.")
+    parser.add_argument("--model", default='../save/pedestrian/mobilenetv2_yolov3_540_960_model_int8_epoch50_1.tflite', type=str, help="Model to load.")
     parser.add_argument("--anchors", default='../data/anchors/pedestrian_540_960_6_anchors.txt', type=str, help="Anchors file.")
     parser.add_argument("--classes", default='../data/classes/pedestrian.names', type=str, help="Classes (.names) file.")
-    parser.add_argument("--classes_num", default=1, type=int, help="classes num")
 else:
     print("detection type not support")
     pass
@@ -34,6 +32,7 @@ else:
 parser.add_argument("--input_output_tensor_quant", default=False, type=bool,
                     help="Indicates whether the model input is quantized.")
 parser.add_argument("--BGR2RGB", default=False, type=bool, help="BGR2RGB.")
+parser.add_argument("--big_first", default=True, type=bool, help="inference output first branch for big feature.")
 
 parser.add_argument("--score_threshold", help="Detection threshold.", type=float, default=0.5)
 parser.add_argument("--nms_threshold", help="NMS threshold.", type=float, default=0.45)
@@ -54,6 +53,14 @@ def make_interpreter(model_file, edge_tpu=False):
             ])
     else:
         return tflite.Interpreter(model_path=model_file)
+
+def get_interpreter_details(interpreter):
+    # Get input and output tensor details
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+    input_shape = input_details[0]["shape"]
+
+    return input_details, output_details, input_shape
 
 # Run YOLO inference on the image, returns detected boxes
 def inference(interpreter, oriImgShape, imgData, anchors, stride, classNum):
@@ -80,8 +87,10 @@ def inference(interpreter, oriImgShape, imgData, anchors, stride, classNum):
     pred_bbox = []
     # print(stride)
     for i in range(args.branch):
-        out = interpreter.get_tensor(output_details[1-i]['index'])
-        # out = interpreter.get_tensor(output_details[i]['index'])
+        if args.big_first:
+            out = interpreter.get_tensor(output_details[1-i]['index'])
+        else:
+            out = interpreter.get_tensor(output_details[i]['index'])
         if args.input_output_tensor_quant:
             scale, zero = output_details[i]['quantization']
             out = (out.astype(np.float32) - zero) * scale
@@ -96,14 +105,6 @@ def inference(interpreter, oriImgShape, imgData, anchors, stride, classNum):
     # print(f"postprocess_boxes pass time: {(timeNode3-timeNode2)*1000} ms.")
 
     return bboxes
-
-def get_interpreter_details(interpreter):
-    # Get input and output tensor details
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-    input_shape = input_details[0]["shape"]
-
-    return input_details, output_details, input_shape
 
 def image_inf(interpreter):
     anchors = get_anchors(args.anchors, args.branch)
@@ -133,8 +134,8 @@ def image_inf(interpreter):
         # Run inference, get boxes
         stride = [8,16,32]
         bboxes = inference(interpreter, imgMat.shape[:2], imgData, anchors, stride[3-args.branch :], len(classes))
-        print('bbox detected: ', len(bboxes))
         if len(bboxes) > 0:
+            print('bbox detected: ', len(bboxes))
             imgMat = draw_bbox(imgMat, bboxes, classes)
             cv2.imwrite(args.deteciton_out+img, imgMat)
 
