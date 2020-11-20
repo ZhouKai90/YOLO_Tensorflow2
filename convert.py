@@ -14,15 +14,15 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 #     tf.config.experimental.set_visible_devices(devices=gpus[1], device_type='GPU')
     # tf.config.experimental.set_memory_growth(device=gpus[1], enable=True)
 
-target = 'helmet'
-# target = 'pedestrians'
+# target = 'helmet'
+target = 'pedestrians'
 
-# backbone = 'mobilenetv2'
-backbone = 'tiny'
+backbone = 'mobilenetv2'
+# backbone = 'tiny'
 
 flags.DEFINE_integer('branch_size',              2,               'branch size')
-flags.DEFINE_string('framework',                'tf',          'define what framework do you want to convert (tf, trt, tflite)')
-flags.DEFINE_string('quantization_type',        'int8',            'dynamic_range or float16 or int8 or None')
+flags.DEFINE_string('framework',                'tflite',          'define what framework do you want to convert (tf, trt, tflite)')
+flags.DEFINE_string('quantization_type',        'uint8',            'dynamic_range or float16 or uint8 or None')
 
 if target == 'helmet':
     flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
@@ -35,13 +35,13 @@ if target == 'helmet':
     flags.DEFINE_string('savePrefix',   'save/helmet/savedmodel/tiny_yolov3_540_960',          'path to savedmodel')
 elif target == 'pedestrians':
     flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
-    flags.DEFINE_string('quan_images',  'data/quan/pedestrian1',                     'images to quan')
+    flags.DEFINE_string('quan_images',  'data/quan/pedestrian',                     'images to quan')
     flags.DEFINE_string('anchors_file', 'data/anchors/pedestrian_540_960_6_anchors.txt',     'anchors file')
     flags.DEFINE_string('classes_file', 'data/classes/pedestrian.names',     'classes file')
     if backbone == 'mobilenetv2':
         flags.DEFINE_string('ckpt',         'save/pedestrian/ckpt/mobilenetv2_yolov3_540_960/model_final',  'path to weights file')
-        flags.DEFINE_string('tflite',       'save/pedestrian/mobilenetv2_yolov3_540_960_model_int8_epoch50_1.tflite',          'path to save tflite')
-        flags.DEFINE_string('savePrefix',   'save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960_epoch50',          'path to savedmodel')
+        flags.DEFINE_string('tflite',       'save/pedestrian/pedestrians_mobilenetv2_yolov3_540_960_uint8.tflite',          'path to save tflite')
+        flags.DEFINE_string('savePrefix',   'save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960',          'path to savedmodel')
     elif backbone == 'tiny':
         flags.DEFINE_string('ckpt',         'save/pedestrian/ckpt/tiny_yolov3_540_960_1W/model_final',  'path to weights file')
         flags.DEFINE_string('tflite',       'save/pedestrian/tiny_yolov3_pedstrian_540_960_int8_epoch50.tflite',          'path to save tflite')
@@ -89,18 +89,15 @@ def representative_dataset_gen_img():
     for img in imgNameList:
         print(img)
         imgMat = cv2.imread(img)
-        # imgMat = cv2.cvtColor(imgMat, cv2.COLOR_BGR2RGB)
-        # imgMat = utils.image_preporcess(np.copy(imgMat), [FLAGS.input_size, FLAGS.input_size], data_type='uint8')
         imgMat = utils.image_preporcess(np.copy(imgMat), [FLAGS.input_size[0], FLAGS.input_size[1]])
         imgMat = imgMat[np.newaxis,:,:,:]
-        # yield [imgMat.astype(np.uint8)]
         yield [imgMat.astype(np.float32)]
 
 def convert_to_tflite(converter, TFLiteFile):
     if FLAGS.quantization_type == 'dynamic_range':
         converter.optimizations = [tf.lite.Optimize.OPTIMIZE_FOR_SIZE] #for Dynamic range quantization
         converter.representative_dataset = representative_dataset_gen_img
-    elif FLAGS.quantization_type == 'int8':
+    elif FLAGS.quantization_type == 'uint8':
         # converter.allow_custom_ops = True
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
         converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]

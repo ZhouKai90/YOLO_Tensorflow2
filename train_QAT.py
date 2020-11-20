@@ -9,6 +9,7 @@ from core.dataset import Dataset
 from cfg.config import cfg
 from core.model_factory import get_model, compute_loss
 from tensorflow import keras
+import tensorflow_model_optimization as tfmot
 
 # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 gpus = tf.config.experimental.list_physical_devices(device_type="GPU")
@@ -78,6 +79,7 @@ if __name__ == '__main__':
         model.load_weights(cfg.TRAIN.PRETRAIN)
         print('Restoring weights from: %s ... ' % cfg.TRAIN.PRETRAIN)
 
+    model = tfmot.quantization.keras.quantize_model(model)
     img_write = True
     for epoch in range(cfg.TRAIN.CONTINUE_EPOCH, cfg.TRAIN.EPOCHS):
         for image_data, target in trainset:
@@ -92,5 +94,5 @@ if __name__ == '__main__':
             model.save_weights(cfg.TRAIN.CKPT_DIR+"model_epoch{}".format(epoch))
         # model.save('save/yolov3', save_format='tf')
     model.save_weights(cfg.TRAIN.CKPT_DIR + "model_final")
-    model.save(cfg.TRAIN.CKPT_DIR+"saved_model", save_format='tf')
+    model.save(cfg.TRAIN.CKPT_DIR+"saved_model.h5")
 

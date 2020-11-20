@@ -14,11 +14,11 @@ if gpus:
     tf.config.experimental.set_visible_devices(devices=gpus[1], device_type='GPU')
     tf.config.experimental.set_memory_growth(device=gpus[1], enable=True)
 
-# flags.DEFINE_string('savedmodel',   'save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960_epoch50',          'path to savedmodel')
-# flags.DEFINE_string('classes_file',        'data/classes/pedestrian.names',                               'classes file')
+flags.DEFINE_string('savedmodel',   'save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960',          'path to savedmodel')
+flags.DEFINE_string('classes_file',        'data/classes/pedestrian.names',                               'classes file')
 
-flags.DEFINE_string('savedmodel',   'save/helmet/savedmodel/mobilenetv2_yolov3_540_960',          'path to savedmodel')
-flags.DEFINE_string('classes_file',        'data/classes/helmet.names',                               'classes file')
+# flags.DEFINE_string('savedmodel',   'save/helmet/savedmodel/mobilenetv2_yolov3_540_960',          'path to savedmodel')
+# flags.DEFINE_string('classes_file',        'data/classes/helmet.names',                               'classes file')
 
 flags.DEFINE_string('detection_out_dir',  'data/detection/test/',                     'images to quan')
 flags.DEFINE_string('images_dir',  'data/images/pedestrian/',                     'images to quan')

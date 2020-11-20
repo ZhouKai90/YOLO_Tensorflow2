@@ -1,11 +1,5 @@
 #! /usr/bin/env python
 # coding=utf-8
-#================================================================
-#   Copyright (C) 2020 * Ltd. All rights reserved.
-#   File name   : dataset.py
-#   Author      : kyle
-#   Description :
-#================================================================
 import os, math
 import cv2
 import random

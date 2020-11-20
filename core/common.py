@@ -1,16 +1,5 @@
 #! /usr/bin/env python
 # coding=utf-8
-#================================================================
-#   Copyright (C) 2019 * Ltd. All rights reserved.
-#
-#   Editor      : VIM
-#   File name   : common.py
-#   Author      : YunYang1994
-#   Created date: 2019-07-11 23:12:53
-#   Description :
-#
-#================================================================
-
 import tensorflow as tf
 from tensorflow.python.keras import backend
 
@@ -44,11 +33,14 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
     if bn: conv = BatchNormalization()(conv)
     if activate == True:
         if activate_type == "leaky":
-            conv = tf.nn.leaky_relu(conv, alpha=0.1)
+            conv = tf.keras.layers.LeakyReLU(conv, alpha=0.1)(conv)
+            # conv = tf.nn.leaky_relu(conv, alpha=0.1)
         elif activate_type == "relu":
-            conv = tf.nn.relu(conv)
+            conv = tf.keras.layers.ReLU()(conv)
+            # conv = tf.nn.relu(conv)
         elif activate_type == "relu6":
-            conv = tf.nn.relu6(conv)
+            conv = tf.keras.layers.ReLU(6)(conv)
+            # conv = tf.nn.relu6(conv)
         elif activate_type == "mish":
             conv = mish(conv)
     return conv
@@ -72,8 +64,8 @@ def upsample(input_layer, method="resize"):
         return tf.image.resize(input_layer, [input_layer.shape[1] * 2, input_layer.shape[2] * 2], method='nearest')
     if method == 'deconv':
         numm_filter = input_layer.shape.as_list()[-1]
-        return tf.keras.layers.Conv2DTranspose(numm_filter, kernel_size=2, padding='same',strides=(2, 2))(input_layer)
-        # return tf.keras.layers.UpSampling2D(size=(2, 2))(input_layer)
+        # return tf.keras.layers.Conv2DTranspose(numm_filter, kernel_size=2, padding='same',strides=(2, 2))(input_layer)
+        return tf.keras.layers.UpSampling2D(size=(2, 2))(input_layer)
 
 def make_divisible(v, divisor, min_value=None):
     if min_value is None:

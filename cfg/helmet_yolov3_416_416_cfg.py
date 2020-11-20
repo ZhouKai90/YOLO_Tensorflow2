@@ -45,7 +45,7 @@ __C.TRAIN.LR_END              = 1e-6
 __C.TRAIN.WARMUP_EPOCHS       = 2
 __C.TRAIN.EPOCHS              = 50
 __C.TRAIN.CKPT_DIR            = 'save/ckpt/yolov3/'
-__C.TRAIN.LOG_DIR             = 'save/log/yolov3/'
+__C.TRAIN.LOG_DIR             = 'save/tensorboard/yolov3/'
 __C.TRAIN.PRETRAIN            = None
 # __C.TRAIN.PRETRAIN            = 'save/ckpt/tiny_yolov3/model_epoch15'
 

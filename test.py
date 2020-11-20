@@ -1,15 +1,5 @@
 #! /usr/bin/env python
 # coding=utf-8
-#================================================================
-#   Copyright (C) 2019 * Ltd. All rights reserved.
-#
-#   Editor      : VIM
-#   File name   : image_demo.py
-#   Author      : YunYang1994
-#   Created date: 2019-07-12 13:07:27
-#   Description :
-#
-#================================================================
 
 import tensorflow as tf
 import cv2

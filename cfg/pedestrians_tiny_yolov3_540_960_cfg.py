@@ -36,7 +36,7 @@ __C.TRAIN.LR_END              = 1e-6
 __C.TRAIN.WARMUP_EPOCHS       = 2
 __C.TRAIN.EPOCHS              = 50
 __C.TRAIN.CKPT_DIR            = 'save/pedestrian/ckpt/tiny_yolov3_540_960/'
-__C.TRAIN.LOG_DIR             = 'save/pedestrian/log/tiny_yolov3_540_960/'
+__C.TRAIN.LOG_DIR             = 'save/pedestrian/tensorboard/tiny_yolov3_540_960/'
 __C.TRAIN.PRETRAIN            = None
 # __C.TRAIN.PRETRAIN            = 'save/pedestrian/ckpt/tiny_yolov3/model_fi'
 
