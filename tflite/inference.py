@@ -12,28 +12,32 @@ EDGETPU_SHARED_LIB = "libedgetpu.so.1"
 
 # detection_type = 'helmet'
 detection_type = 'pedestrian'
+# detection_type = 'motorbike_bicycle'
 
 parser = argparse.ArgumentParser("Run TF-Lite YOLO-V3 Tiny inference.")
 parser.add_argument("--branch", default=2, type=int, help="branch size")
 
 if detection_type == 'helmet':
-    parser.add_argument("--model", default='../save/helmet/tiny_yolov3_helmet540_960_epoch50.tflite', type=str, help="Model to load.")
+    parser.add_argument("--model", default='../save/helmet/helmet_tiny_yolov3_helmet540_960.tflite', type=str, help="Model to load.")
     parser.add_argument("--anchors", default='../data/anchors/helmet_540_960_6_anchors.txt', type=str, help="Anchors file.")
     parser.add_argument("--classes", default='../data/classes/helmet.names', type=str, help="Classes (.names) file.")
 elif detection_type == 'pedestrian':
-    parser.add_argument("--model", default='../save/pedestrian/pedestrians_mobilenetv2_yolov3_540_960_uint8.tflite', type=str, help="Model to load.")
+    parser.add_argument("--model", default='../save/pedestrian/pedestrians_tiny_yolov3_540_960_test_IO_uint8.tflite', type=str, help="Model to load.")
+    # parser.add_argument("--model", default='../save/pedestrian/pedestrians_tiny_yolov3_540_960.tflite', type=str, help="Model to load.")
     parser.add_argument("--anchors", default='../data/anchors/pedestrian_540_960_6_anchors.txt', type=str, help="Anchors file.")
     parser.add_argument("--classes", default='../data/classes/pedestrian.names', type=str, help="Classes (.names) file.")
+elif detection_type == 'motorbike_bicycle':
+    parser.add_argument("--model", default='../save/motorbike_bicycle/motorbike_bicycle_tiny_yolov3_540_960.tflite', type=str, help="Model to load.")
+    # parser.add_argument("--model", default='../save/pedestrian/pedestrians_tiny_yolov3_540_960.tflite', type=str, help="Model to load.")
+    parser.add_argument("--anchors", default='../data/anchors/motorbike_bicycle_540_960_6_anchors.txt', type=str, help="Anchors file.")
+    parser.add_argument("--classes", default='../data/classes/motorbike_bicycle.names', type=str, help="Classes (.names) file.")
 else:
     print("detection type not support")
     pass
 
-parser.add_argument("--input_output_tensor_quant", default=True, type=bool,
-                    help="Indicates whether the model input is quantized.")
 parser.add_argument("--BGR2RGB", default=False, type=bool, help="BGR2RGB.")
-parser.add_argument("--big_first", default=True, type=bool, help="inference output first branch for big feature.")
 
-parser.add_argument("--score_threshold", help="Detection threshold.", type=float, default=0.5)
+parser.add_argument("--score_threshold", help="Detection threshold.", type=float, default=0.75)
 parser.add_argument("--nms_threshold", help="NMS threshold.", type=float, default=0.45)
 
 parser.add_argument("--image", default='../data/images/pedestrian/', type=str, help="Run inference on image.")
@@ -58,16 +62,64 @@ def get_interpreter_details(interpreter):
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
     input_shape = input_details[0]["shape"]
-
     return input_details, output_details, input_shape
+
+# Run YOLO inference on the image, returns detected boxes
+def inference_modify(interpreter, oriImgShape, imgData, anchors, stride, classNum):
+    input_details, output_details, net_input_shape = \
+            get_interpreter_details(interpreter)
+
+    # imgData = np.divide(imgData, 255.).astype(np.float32)
+
+    input_detail = input_details[0]
+    default_scale, default_zero_point = 0, 0
+    if input_detail['quantization'] != (default_scale, default_zero_point):
+        # Quantize the input
+        scale, zero_point = input_detail['quantization']
+        input_tensor = imgData / scale + zero_point
+        input_tensor = np.array(input_tensor, dtype=input_detail['dtype'])
+
+    # Set input tensor
+    interpreter.set_tensor(input_details[0]['index'], input_tensor)
+
+    timeNode1 = time()
+    # Run model
+    interpreter.invoke()
+    timeNode2 = time()
+    # print("Net forward-pass time: {(timeNode2-timeNode1)*1000} ms.")
+
+    output_layer = ['Identity', 'Identity_1']
+    pred_bbox = []
+    # print(stride)
+    for i, output_name in enumerate(output_layer):
+        for output_branch in output_details:
+            if output_branch['name'] == output_name:
+                out = interpreter.get_tensor(output_branch['index'])
+                if output_branch['dtype'] == np.uint8 and output_branch['quantization'] != (0, 0):     #convert UINT8 to FP32
+                    scale, zero = output_branch['quantization']
+                    out = (out.astype(np.float32) - zero) * scale
+
+                out = decode(out, anchors, stride, i, classNum)
+                pred_bbox.append(np.reshape(out, (-1, np.shape(out)[-1])))
+                break
+
+    pred_bbox = np.concatenate(pred_bbox, axis=0)
+
+    bboxes = postprocess_boxes(pred_bbox, oriImgShape, net_input_shape, args.score_threshold)
+
+    bboxes = nms(bboxes, args.nms_threshold, method='nms')
+    timeNode3 = time()
+    # print(f"postprocess_boxes pass time: {(timeNode3-timeNode2)*1000} ms.")
+
+    return bboxes
 
 # Run YOLO inference on the image, returns detected boxes
 def inference(interpreter, oriImgShape, imgData, anchors, stride, classNum):
     input_details, output_details, net_input_shape = \
             get_interpreter_details(interpreter)
-
-    if args.input_output_tensor_quant:
-        #如果input和output都量化为INT8，就直接输入图片推理
+    # if args.input_output_tensor_quant:
+    if input_details[0]['dtype'] == np.uint8:
+        #如果input和output都量化为UINT8，就直接输入图片推理
         imgData = imgData.astype(np.uint8)
     else:
         print("Input tensor not quant")
@@ -83,18 +135,21 @@ def inference(interpreter, oriImgShape, imgData, anchors, stride, classNum):
     timeNode2 = time()
     # print("Net forward-pass time: {(timeNode2-timeNode1)*1000} ms.")
 
+    output_layer = ['Identity', 'Identity_1']
+    # output_layer = ['Identity']
+
     pred_bbox = []
     # print(stride)
-    for i in range(args.branch):
-        if args.big_first:
-            out = interpreter.get_tensor(output_details[1-i]['index'])
-        else:
-            out = interpreter.get_tensor(output_details[i]['index'])
-        if args.input_output_tensor_quant:
-            scale, zero = output_details[i]['quantization']
-            out = (out.astype(np.float32) - zero) * scale
-        out = decode(out, anchors, stride, i, classNum)
-        pred_bbox.append(np.reshape(out, (-1, np.shape(out)[-1])))
+    for i, output_name in enumerate(output_layer):
+        for output_branch in output_details:
+            if output_branch['name'] == output_name:
+                out = interpreter.get_tensor(output_branch['index'])
+                if output_branch['dtype'] == np.uint8 and output_branch['quantization'] != (0, 0):     #convert UINT8 to FP32
+                    scale, zero = output_branch['quantization']
+                    out = (out.astype(np.float32) - zero) * scale
+                out = decode(out, anchors, stride, i, classNum)
+                pred_bbox.append(np.reshape(out, (-1, np.shape(out)[-1])))
+                break
 
     pred_bbox = np.concatenate(pred_bbox, axis=0)
 
@@ -104,6 +159,7 @@ def inference(interpreter, oriImgShape, imgData, anchors, stride, classNum):
     # print(f"postprocess_boxes pass time: {(timeNode3-timeNode2)*1000} ms.")
 
     return bboxes
+
 
 def image_inf(interpreter):
     anchors = get_anchors(args.anchors, args.branch)

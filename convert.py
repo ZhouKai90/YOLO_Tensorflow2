@@ -7,8 +7,9 @@ from core.model_factory import decode
 from absl import flags, app
 from absl.flags import FLAGS
 import core.utils as utils
+import random
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 # gpus = tf.config.experimental.list_physical_devices(device_type="GPU")
 # if gpus:
 #     tf.config.experimental.set_visible_devices(devices=gpus[1], device_type='GPU')
@@ -16,36 +17,57 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 # target = 'helmet'
 target = 'pedestrians'
+# target = 'motorbike_bicycle'
 
-backbone = 'mobilenetv2'
-# backbone = 'tiny'
+# backbone = 'mobilenetv2'
+backbone = 'tiny'
 
-flags.DEFINE_integer('branch_size',              2,               'branch size')
-flags.DEFINE_string('framework',                'tflite',          'define what framework do you want to convert (tf, trt, tflite)')
-flags.DEFINE_string('quantization_type',        'uint8',            'dynamic_range or float16 or uint8 or None')
+flags.DEFINE_integer('branch_size',                         2,               'branch size')
+flags.DEFINE_string('framework',                          'tflite',          'define what framework do you want to convert (tf, trt, tflite)')
+flags.DEFINE_string('quantization_type',                  'IO',              'DR for dynamic_range,  IO for integer_only, NQ for not quantization')
+flags.DEFINE_string('quantization_inputdata_type',        'fp32',            'fp32 or uint8 or None')
 
 if target == 'helmet':
     flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
     flags.DEFINE_string('quan_images',  'data/quan/helmet',                     'images to quan')
     flags.DEFINE_string('anchors_file', 'data/anchors/helmet_540_960_6_anchors.txt',     'anchors file')
     flags.DEFINE_string('classes_file', 'data/classes/helmet.names',     'anchors file')
+    if backbone == 'mobilenetv2':
+        flags.DEFINE_string('ckpt', 'save/helmet/ckpt/mobilenetv2_yolov3_540_960/model_final','path to weights file')
+        flags.DEFINE_string('tflitePrefix', 'save/helmet/helmet_mobilenetv2_yolov3_540_960','path to save tflite')
+        flags.DEFINE_string('savePrefix', 'save/helmet/savedmodel/mobilenetv2_yolov3_540_960.h5','path to savedmodel')
+    elif backbone == 'tiny':
+        flags.DEFINE_string('ckpt', 'save/helmet/ckpt/tiny_yolov3_540_960/model_final', 'path to weights file')
+        flags.DEFINE_string('tflitePrefix', 'save/helmet/helmet_tiny_yolov3_helmet540_960', 'path to save tflite')
+        flags.DEFINE_string('savePrefix', 'save/helmet/savedmodel/tiny_yolov3_540_960', 'path to savedmodel')
 
-    flags.DEFINE_string('ckpt',         'save/helmet/ckpt/tiny_yolov3_540_960/model_final',  'path to weights file')
-    flags.DEFINE_string('tflite',       'save/helmet/tiny_yolov3_helmet540_960_fp32.tflite',          'path to save tflite')
-    flags.DEFINE_string('savePrefix',   'save/helmet/savedmodel/tiny_yolov3_540_960',          'path to savedmodel')
 elif target == 'pedestrians':
     flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
-    flags.DEFINE_string('quan_images',  'data/quan/pedestrian',                     'images to quan')
+    flags.DEFINE_string('quan_images',  'data/quan/pedestrian1',                     'images to quan')
     flags.DEFINE_string('anchors_file', 'data/anchors/pedestrian_540_960_6_anchors.txt',     'anchors file')
     flags.DEFINE_string('classes_file', 'data/classes/pedestrian.names',     'classes file')
     if backbone == 'mobilenetv2':
         flags.DEFINE_string('ckpt',         'save/pedestrian/ckpt/mobilenetv2_yolov3_540_960/model_final',  'path to weights file')
-        flags.DEFINE_string('tflite',       'save/pedestrian/pedestrians_mobilenetv2_yolov3_540_960_uint8.tflite',          'path to save tflite')
-        flags.DEFINE_string('savePrefix',   'save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960',          'path to savedmodel')
+        flags.DEFINE_string('tflitePrefix', 'save/pedestrian/pedestrians_mobilenetv2_yolov3_540_960',          'path to save tflite')
+        flags.DEFINE_string('savePrefix',   'save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960.h5',          'path to savedmodel')
     elif backbone == 'tiny':
-        flags.DEFINE_string('ckpt',         'save/pedestrian/ckpt/tiny_yolov3_540_960_1W/model_final',  'path to weights file')
-        flags.DEFINE_string('tflite',       'save/pedestrian/tiny_yolov3_pedstrian_540_960_int8_epoch50.tflite',          'path to save tflite')
-        flags.DEFINE_string('savePrefix',   'save/pedestrian/savedmodel/tiny_yolov3_540_960_1W.h5',          'path to savedmodel')
+        flags.DEFINE_string('ckpt',         'save/pedestrian/ckpt/tiny_yolov3_540_960_test/model_epoch8',  'path to weights file')
+        flags.DEFINE_string('tflitePrefix', 'save/pedestrian/pedestrians_tiny_yolov3_540_960_test',          'path to save tflite')
+        flags.DEFINE_string('savePrefix',   'save/pedestrian/savedmodel/tiny_yolov3_540_960.h5',          'path to savedmodel')
+
+elif target == 'motorbike_bicycle':
+    flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
+    flags.DEFINE_string('quan_images',  'data/quan/motorbike_bicycle',                     'images to quan')
+    flags.DEFINE_string('anchors_file', 'data/anchors/motorbike_bicycle_540_960_6_anchors.txt',     'anchors file')
+    flags.DEFINE_string('classes_file', 'data/classes/motorbike_bicycle.names',     'classes file')
+    if backbone == 'mobilenetv2':
+        flags.DEFINE_string('ckpt',         'save/motorbike_bicycle/ckpt/mobilenetv2_yolov3_540_960/model_final',  'path to weights file')
+        flags.DEFINE_string('tflitePrefix', 'save/motorbike_bicycle/pedestrians_mobilenetv2_yolov3_540_960',          'path to save tflite')
+        flags.DEFINE_string('savePrefix',   'save/motorbike_bicycle/savedmodel/mobilenetv2_yolov3_540_960.h5',          'path to savedmodel')
+    elif backbone == 'tiny':
+        flags.DEFINE_string('ckpt',         'save/motorbike_bicycle/ckpt/tiny_yolov3_540_960_1class/model_final',  'path to weights file')
+        flags.DEFINE_string('tflitePrefix', 'save/motorbike_bicycle/motorbike_bicycle_tiny_yolov3_540_960_1class',          'path to save tflite')
+        flags.DEFINE_string('savePrefix',   'save/motorbike_bicycle/savedmodel/tiny_yolov3_540_960.h5',          'path to savedmodel')
 
 
 def getModelformCheckpoint(withDecode=False, swap=False):
@@ -83,30 +105,44 @@ def representative_dataset_gen():
         print('range')
         yield [np.random.uniform(0.0, 1.0, size=(1, FLAGS.input_size[0], FLAGS.input_size[1], 3)).astype(np.float32)]
 
-def representative_dataset_gen_img():
+def representative_dataset_gen_img(imgCnt=0):
     imgDir = os.path.abspath(FLAGS.quan_images)
     imgNameList = glob.glob(os.path.join(imgDir, '*.jpg'))
-    for img in imgNameList:
-        print(img)
-        imgMat = cv2.imread(img)
+    imgIndex = random.sample(range(len(imgNameList)), len(imgNameList) if imgCnt == 0 else imgCnt)
+
+    for i in imgIndex:
+        print(imgNameList[i])
+        imgMat = cv2.imread(imgNameList[i])
         imgMat = utils.image_preporcess(np.copy(imgMat), [FLAGS.input_size[0], FLAGS.input_size[1]])
         imgMat = imgMat[np.newaxis,:,:,:]
         yield [imgMat.astype(np.float32)]
 
-def convert_to_tflite(converter, TFLiteFile):
-    if FLAGS.quantization_type == 'dynamic_range':
+def convert_to_tflite(converter, TFLitePrefix):
+    if FLAGS.quantization_type == 'DR':
         converter.optimizations = [tf.lite.Optimize.OPTIMIZE_FOR_SIZE] #for Dynamic range quantization
         converter.representative_dataset = representative_dataset_gen_img
-    elif FLAGS.quantization_type == 'uint8':
-        # converter.allow_custom_ops = True
+        TFLiteFile = TFLitePrefix + '_DR.tflite'
+    elif FLAGS.quantization_type == 'IO':
+        # converter.allow_custom_ops = False
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
         converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
-        converter.inference_input_type = tf.uint8  # or tf.int8
-        converter.inference_output_type = tf.uint8  # or tf.int8
+        if FLAGS.quantization_inputdata_type == 'fp32':
+            converter.inference_input_type = tf.float32
+            converter.inference_output_type = tf.float32
+        elif FLAGS.quantization_inputdata_type == 'uint8':
+            converter.inference_input_type = tf.uint8
+            converter.inference_output_type = tf.uint8
+        elif FLAGS.quantization_inputdata_type == 'int8':
+            converter.inference_input_type = tf.int8
+            converter.inference_output_type = tf.int8
+        else:
+            assert (0)
         # converter.representative_dataset = representative_dataset_gen
         converter.representative_dataset = representative_dataset_gen_img
+        TFLiteFile = TFLitePrefix + '_IO_{}.tflite'.format(FLAGS.quantization_inputdata_type)
     else:
         print("No quantization.")
+        TFLiteFile = TFLitePrefix + '.tflite'
     TFLiteModel = converter.convert()
     print("Convert to tflite succeed:", TFLiteFile)
     open(TFLiteFile, "wb").write(TFLiteModel)
@@ -136,8 +172,8 @@ def convert_tflite_from_keras(TFLiteFile, kerasH5File=None):
 
 def main(_argv):
     if FLAGS.framework == 'tflite':
-        # convert_tflite_from_savedmodel(FLAGS.tflite)      #转换得到的tflite的input和output为fp32
-        convert_tflite_from_keras(FLAGS.tflite)             #转换得到的tflite input和output为uint8
+        # convert_tflite_from_savedmodel(FLAGS.tflitePrefix)      #转换得到的tflite的input和output为fp32
+        convert_tflite_from_keras(FLAGS.tflitePrefix)             #转换得到的tflite input和output为uint8
     elif FLAGS.framework == 'tf':
         model = getModelformCheckpoint(True)
         model.save(FLAGS.savePrefix)
@@ -149,3 +185,5 @@ if __name__ == '__main__':
         app.run(main)
     except SystemExit:
         pass
+
+

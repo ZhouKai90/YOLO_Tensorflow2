@@ -47,7 +47,7 @@ def YOLOv3(input_layer, NUM_CLASS):
 
     return [conv_sbbox, conv_mbbox, conv_lbbox]
 
-def tiny_YOLOv3(input_layer, NUM_CLASS):
+def tiny_YOLOv3_large(input_layer, NUM_CLASS):
     route_1, conv = backbone.darknet53_tiny(input_layer)
 
     conv = common.convolutional(conv, (1, 1, 1024, 512))
@@ -58,9 +58,46 @@ def tiny_YOLOv3(input_layer, NUM_CLASS):
     conv = common.convolutional(conv, (1, 1, 512, 256))
     conv = common.upsample(conv)
     conv = tf.concat([conv, route_1], axis=-1)
+    # conv = tf.keras.layers.concatenate([conv, route_1], axis=-1)
 
     conv_mobj_branch = common.convolutional(conv, (3, 3, 256+256, 386))
     conv_mbbox = common.convolutional(conv_mobj_branch, (1, 1, 386, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+
+    return [conv_mbbox, conv_lbbox]
+
+def tiny_YOLOv3(input_layer, NUM_CLASS):
+    route_1, conv = backbone.darknet53_tiny(input_layer)
+
+    conv = common.convolutional(conv, (1, 1, 1024, 512))
+
+    conv_lobj_branch = common.convolutional(conv, (3, 3, 512, 512))
+    conv_lbbox = common.convolutional(conv_lobj_branch, (1, 1, 512, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.upsample(conv)
+    # conv = tf.concat([conv, route_1], axis=-1)
+    conv = conv + route_1
+    conv_mobj_branch = common.convolutional(conv, (3, 3, 256, 256))
+    conv_mbbox = common.convolutional(conv_mobj_branch, (1, 1, 256, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+
+    return [conv_mbbox, conv_lbbox]
+
+
+def tiny_YOLOv3_ori(input_layer, NUM_CLASS):
+    route_1, conv = backbone.darknet53_tiny(input_layer)
+
+    conv = common.convolutional(conv, (1, 1, 1024, 256))
+
+    conv_lobj_branch = common.convolutional(conv, (3, 3, 256, 512))
+    conv_lbbox = common.convolutional(conv_lobj_branch, (1, 1, 512, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.upsample(conv)
+    # conv = tf.concat([conv, route_1], axis=-1)
+    conv = tf.keras.layers.concatenate([conv, route_1], axis=-1)
+
+    conv_mobj_branch = common.convolutional(conv, (3, 3, 128, 256))
+    conv_mbbox = common.convolutional(conv_mobj_branch, (1, 1, 256, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
 
     return [conv_mbbox, conv_lbbox]
 

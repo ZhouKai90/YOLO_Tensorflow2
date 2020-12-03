@@ -34,13 +34,10 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
     if activate == True:
         if activate_type == "leaky":
             conv = tf.keras.layers.LeakyReLU(conv, alpha=0.1)(conv)
-            # conv = tf.nn.leaky_relu(conv, alpha=0.1)
         elif activate_type == "relu":
             conv = tf.keras.layers.ReLU()(conv)
-            # conv = tf.nn.relu(conv)
         elif activate_type == "relu6":
             conv = tf.keras.layers.ReLU(6)(conv)
-            # conv = tf.nn.relu6(conv)
         elif activate_type == "mish":
             conv = mish(conv)
     return conv
@@ -64,8 +61,8 @@ def upsample(input_layer, method="resize"):
         return tf.image.resize(input_layer, [input_layer.shape[1] * 2, input_layer.shape[2] * 2], method='nearest')
     if method == 'deconv':
         numm_filter = input_layer.shape.as_list()[-1]
-        # return tf.keras.layers.Conv2DTranspose(numm_filter, kernel_size=2, padding='same',strides=(2, 2))(input_layer)
-        return tf.keras.layers.UpSampling2D(size=(2, 2))(input_layer)
+        return tf.keras.layers.Conv2DTranspose(numm_filter, kernel_size=2, padding='same',strides=(2, 2))(input_layer)
+        # return tf.keras.layers.UpSampling2D(size=(2, 2))(input_layer)
 
 def make_divisible(v, divisor, min_value=None):
     if min_value is None:

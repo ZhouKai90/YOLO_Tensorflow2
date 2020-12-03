@@ -14,8 +14,8 @@ __C.YOLO                      = edict()
 
 __C.YOLO.IS_TINY                = True
 # Set the class name
-__C.YOLO.CLASSES                = "data/classes/pedestrian.names"
-__C.YOLO.ANCHORS                = "data/anchors/pedestrian_540_960_6_anchors.txt"
+__C.YOLO.CLASSES                = "data/classes/motorbike_bicycle.names"
+__C.YOLO.ANCHORS                = "data/anchors/motorbike_bicycle_540_960_6_anchors.txt"
 __C.YOLO.STRIDES                = [16, 32]          #for tiny yolo
 __C.YOLO.BRANCH_SIZE             = len(__C.YOLO.STRIDES)
 
@@ -26,7 +26,7 @@ __C.YOLO.IOU_LOSS_THRESH      = 0.5
 __C.TRAIN                     = edict()
 
 __C.TRAIN.BACKBONE            = 'tiny_yolov3'
-__C.TRAIN.DATASET_PATH        = "data/dataset/pedestrian/VOC2020/"
+__C.TRAIN.DATASET_PATH        = "data/dataset/motorbike_bicycle/VOC2020/"
 __C.TRAIN.ANNOT_PATH          = __C.TRAIN.DATASET_PATH + "trainval.txt"
 __C.TRAIN.BATCH_SIZE          = 26
 __C.TRAIN.INPUT_SIZE          = [540, 960]  #[H, W]
@@ -37,13 +37,14 @@ __C.TRAIN.LR_INIT             = 1e-3
 __C.TRAIN.LR_END              = 1e-6
 __C.TRAIN.WARMUP_EPOCHS       = 2
 __C.TRAIN.EPOCHS              = 50
-__C.TRAIN.CKPT_DIR            = 'save/pedestrian/ckpt/tiny_yolov3_540_960_deconv/'
-__C.TRAIN.LOG_DIR             = 'save/pedestrian/tensorboard/tiny_yolov3_540_960_deconv/'
+__C.TRAIN.CKPT_DIR            = 'save/motorbike_bicycle/ckpt/tiny_yolov3_540_960_1class/'
+__C.TRAIN.LOG_DIR             = 'save/motorbike_bicycle/tensorboard/tiny_yolov3_540_960_1class/'
 __C.TRAIN.CONTINUE_EPOCH      = 0
 __C.TRAIN.PRETRAIN            = None
-# __C.TRAIN.PRETRAIN            = 'save/pedestrian/ckpt/tiny_yolov3/model_fi'
+# __C.TRAIN.PRETRAIN            = 'save/pedestrian/ckpt/mobilenetv2_yolov3_540_960/model_final'
 
 # TEST options
+
 __C.TEST                      = edict()
 
 __C.TEST.ANNOT_PATH           = "data/dataset/pedestrian/VOC2020/test.txt"

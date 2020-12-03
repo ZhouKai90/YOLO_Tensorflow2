@@ -10,11 +10,11 @@ from cfg.config import cfg
 from core.model_factory import get_model, compute_loss
 from tensorflow import keras
 
-# os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 gpus = tf.config.experimental.list_physical_devices(device_type="GPU")
 if gpus:
-    tf.config.experimental.set_visible_devices(devices=gpus[:2], device_type='GPU')
-    for gpu in gpus[:2]:
+    tf.config.experimental.set_visible_devices(devices=gpus[2:], device_type='GPU')
+    for gpu in gpus[2:]:
         tf.config.experimental.set_memory_growth(device=gpu, enable=True)
 
 trainset = Dataset('train')
