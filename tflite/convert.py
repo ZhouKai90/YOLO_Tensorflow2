@@ -3,24 +3,25 @@ import numpy as np
 import cv2
 import tensorflow as tf
 from core.yolov3 import YOLOv3, tiny_YOLOv3, mobilenetV2_YOLOv3
+from core.yolov4 import YOLOv4, tiny_YOLOv4
 from core.model_factory import decode
 from absl import flags, app
 from absl.flags import FLAGS
 import core.utils as utils
 import random
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 # gpus = tf.config.experimental.list_physical_devices(device_type="GPU")
 # if gpus:
-#     tf.config.experimental.set_visible_devices(devices=gpus[1], device_type='GPU')
+#     tf.config.experimental.set_visible_devices(devices=gpus[-1], device_type='GPU')
     # tf.config.experimental.set_memory_growth(device=gpus[1], enable=True)
 
 # target = 'helmet'
 target = 'pedestrians'
-# target = 'motorbike_bicycle'
+#target = 'snow_panther'
 
 # backbone = 'mobilenetv2'
-backbone = 'tiny'
+backbone = 'tiny-yolov4'
 
 flags.DEFINE_integer('branch_size',                         2,               'branch size')
 flags.DEFINE_string('framework',                          'tflite',          'define what framework do you want to convert (tf, trt, tflite)')
@@ -50,24 +51,24 @@ elif target == 'pedestrians':
         flags.DEFINE_string('ckpt',         'save/pedestrian/ckpt/mobilenetv2_yolov3_540_960/model_final',  'path to weights file')
         flags.DEFINE_string('tflitePrefix', 'save/pedestrian/pedestrians_mobilenetv2_yolov3_540_960',          'path to save tflite')
         flags.DEFINE_string('savePrefix',   'save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960.h5',          'path to savedmodel')
-    elif backbone == 'tiny':
-        flags.DEFINE_string('ckpt',         'save/pedestrian/ckpt/tiny_yolov3_540_960_test/model_epoch8',  'path to weights file')
-        flags.DEFINE_string('tflitePrefix', 'save/pedestrian/pedestrians_tiny_yolov3_540_960_test',          'path to save tflite')
+    elif backbone == 'tiny-yolov4':
+        flags.DEFINE_string('ckpt',         'save/pedestrian/ckpt/tiny_yolov4_540_960/model_epoch26',  'path to weights file')
+        flags.DEFINE_string('tflitePrefix', 'save/pedestrian/pedestrians_tiny_yolov4_540_960',          'path to save tflite')
         flags.DEFINE_string('savePrefix',   'save/pedestrian/savedmodel/tiny_yolov3_540_960.h5',          'path to savedmodel')
 
-elif target == 'motorbike_bicycle':
+elif target == 'snow_panther':
     flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
-    flags.DEFINE_string('quan_images',  'data/quan/motorbike_bicycle',                     'images to quan')
-    flags.DEFINE_string('anchors_file', 'data/anchors/motorbike_bicycle_540_960_6_anchors.txt',     'anchors file')
-    flags.DEFINE_string('classes_file', 'data/classes/motorbike_bicycle.names',     'classes file')
+    flags.DEFINE_string('quan_images',  'data/quan/snow_panther',                     'images to quan')
+    flags.DEFINE_string('anchors_file', 'data/anchors/snow_panther_540_960_6_anchors.txt',     'anchors file')
+    flags.DEFINE_string('classes_file', 'data/classes/snow_panther.names',     'classes file')
     if backbone == 'mobilenetv2':
-        flags.DEFINE_string('ckpt',         'save/motorbike_bicycle/ckpt/mobilenetv2_yolov3_540_960/model_final',  'path to weights file')
-        flags.DEFINE_string('tflitePrefix', 'save/motorbike_bicycle/pedestrians_mobilenetv2_yolov3_540_960',          'path to save tflite')
-        flags.DEFINE_string('savePrefix',   'save/motorbike_bicycle/savedmodel/mobilenetv2_yolov3_540_960.h5',          'path to savedmodel')
-    elif backbone == 'tiny':
-        flags.DEFINE_string('ckpt',         'save/motorbike_bicycle/ckpt/tiny_yolov3_540_960_1class/model_final',  'path to weights file')
-        flags.DEFINE_string('tflitePrefix', 'save/motorbike_bicycle/motorbike_bicycle_tiny_yolov3_540_960_1class',          'path to save tflite')
-        flags.DEFINE_string('savePrefix',   'save/motorbike_bicycle/savedmodel/tiny_yolov3_540_960.h5',          'path to savedmodel')
+        flags.DEFINE_string('ckpt',         'save/snow_panther/ckpt/mobilenetv2_yolov3_540_960/model_epoch20',  'path to weights file')
+        flags.DEFINE_string('tflitePrefix', 'save/snow_panther/pedestrians_mobilenetv2_yolov3_540_960',          'path to save tflite')
+        flags.DEFINE_string('savePrefix',   'save/snow_panther/savedmodel/mobilenetv2_yolov3_540_960.h5',          'path to savedmodel')
+    elif backbone == 'tiny-yolov3':
+        flags.DEFINE_string('ckpt',         'save/snow_panther/ckpt/tiny_yolov3_540_960/model_final',  'path to weights file')
+        flags.DEFINE_string('tflitePrefix', 'save/snow_panther/snow_panther_tiny_yolov3_540_960',          'path to save tflite')
+        flags.DEFINE_string('savePrefix',   'save/snow_panther/savedmodel/tiny_yolov3_540_960.h5',          'path to savedmodel')
 
 
 def getModelformCheckpoint(withDecode=False, swap=False):
@@ -76,10 +77,12 @@ def getModelformCheckpoint(withDecode=False, swap=False):
     input_tensor = tf.keras.layers.Input([FLAGS.input_size[0], FLAGS.input_size[1], 3])
     if backbone == 'yolov3':
         feature_maps = YOLOv3(input_tensor, numClasses)
-    elif backbone == 'tiny':
+    elif backbone == 'tiny-yolov3':
         feature_maps = tiny_YOLOv3(input_tensor, numClasses)
     elif backbone == 'mobilenetv2':
-        feature_maps = mobilenetV2_YOLOv3(input_tensor, numClasses, FLAGS.branch_size)
+        feature_maps = mobilenetV2_YOLOv3(input_tensor, numClasses)
+    elif backbone == 'tiny-yolov4':
+        feature_maps = tiny_YOLOv4(input_tensor, numClasses)
     else:
         raise ValueError('backbone unknow.')
 
@@ -113,7 +116,7 @@ def representative_dataset_gen_img(imgCnt=0):
     for i in imgIndex:
         print(imgNameList[i])
         imgMat = cv2.imread(imgNameList[i])
-        imgMat = utils.image_preporcess(np.copy(imgMat), [FLAGS.input_size[0], FLAGS.input_size[1]])
+        imgMat = utils.image_preprocess(np.copy(imgMat), [FLAGS.input_size[0], FLAGS.input_size[1]])
         imgMat = imgMat[np.newaxis,:,:,:]
         yield [imgMat.astype(np.float32)]
 
@@ -172,8 +175,8 @@ def convert_tflite_from_keras(TFLiteFile, kerasH5File=None):
 
 def main(_argv):
     if FLAGS.framework == 'tflite':
-        # convert_tflite_from_savedmodel(FLAGS.tflitePrefix)      #转换得到的tflite的input和output为fp32
-        convert_tflite_from_keras(FLAGS.tflitePrefix)             #转换得到的tflite input和output为uint8
+        convert_tflite_from_savedmodel(FLAGS.tflitePrefix)      #转换得到的tflite的input和output为fp32
+        # convert_tflite_from_keras(FLAGS.tflitePrefix)             #转换得到的tflite input和output为uint8
     elif FLAGS.framework == 'tf':
         model = getModelformCheckpoint(True)
         model.save(FLAGS.savePrefix)

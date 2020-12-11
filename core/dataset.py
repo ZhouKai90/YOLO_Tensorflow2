@@ -5,24 +5,23 @@ import cv2
 import random
 import numpy as np
 import core.utils as utils
-from cfg.config import cfg
+from cfg.config import CFG
 
 class Dataset(object):
     """implement Dataset here"""
     def __init__(self, dataset_type):
-        self.annot_path  = cfg.TRAIN.ANNOT_PATH if dataset_type == 'train' else cfg.TEST.ANNOT_PATH
-        self.input_sizes = cfg.TRAIN.INPUT_SIZE if dataset_type == 'train' else cfg.TEST.INPUT_SIZE
-        self.batch_size  = cfg.TRAIN.BATCH_SIZE if dataset_type == 'train' else cfg.TEST.BATCH_SIZE
-        self.data_aug    = cfg.TRAIN.DATA_AUG   if dataset_type == 'train' else cfg.TEST.DATA_AUG
-        self.data_type   = cfg.TRAIN.DATA_TYPE
-        self.BGR2RGB     = cfg.TRAIN.BGR2RGB
-        self.train_input_size = np.array(cfg.TRAIN.INPUT_SIZE)
-        self.strides = np.array(cfg.YOLO.STRIDES)
+        self.annot_path  = CFG.DATASET.TRAIN_ANNOT if dataset_type == 'train' else CFG.DATASET.TEST_ANNOT
+        self.input_sizes = CFG.TRAIN.INPUT_SIZE if dataset_type == 'train' else CFG.TEST.INPUT_SIZE
+        self.batch_size  = CFG.TRAIN.BATCH_SIZE if dataset_type == 'train' else CFG.TEST.BATCH_SIZE
+        self.data_aug    = CFG.TRAIN.DATA_AUG   if dataset_type == 'train' else CFG.TEST.DATA_AUG
+        self.BGR2RGB     = CFG.TRAIN.BGR2RGB
+        self.train_input_size = np.array(CFG.TRAIN.INPUT_SIZE)
+        self.strides = np.array(CFG.YOLO.STRIDES)
         self.branch_size = len(self.strides)
-        self.classes = utils.read_class_names(cfg.YOLO.CLASSES)
+        self.classes = utils.read_class_names(CFG.YOLO.CLASSES)
         self.num_classes = len(self.classes)
-        self.anchors = np.array(utils.get_anchors(cfg.YOLO.ANCHORS, cfg.YOLO.BRANCH_SIZE))
-        self.anchor_per_scale = cfg.YOLO.ANCHOR_PER_SCALE
+        self.anchors = np.array(utils.get_anchors(CFG.YOLO.ANCHORS, CFG.YOLO.BRANCH_SIZE))
+        self.anchor_per_scale = CFG.YOLO.ANCHOR_PER_SCALE
         self.max_bbox_per_scale = 150
 
         self.annotations = self.load_annotations()
@@ -169,7 +168,7 @@ class Dataset(object):
         if self.BGR2RGB is True:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        image, bboxes = utils.image_preporcess(np.copy(image), self.train_input_size, np.copy(bboxes), data_type=self.data_type)
+        image, bboxes = utils.image_preprocess(np.copy(image), self.train_input_size, np.copy(bboxes))
         return image, bboxes
 
     def bbox_iou(self, boxes1, boxes2):

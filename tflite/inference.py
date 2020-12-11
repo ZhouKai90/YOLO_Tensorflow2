@@ -1,48 +1,52 @@
-import numpy as np
 import tensorflow.lite as tflite
-import sys
-import cv2
 import os
 from time import time
 from utils import *
 import argparse
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 EDGETPU_SHARED_LIB = "libedgetpu.so.1"
 
 # detection_type = 'helmet'
 detection_type = 'pedestrian'
-# detection_type = 'motorbike_bicycle'
+# detection_type = 'snow_panther'
 
 parser = argparse.ArgumentParser("Run TF-Lite YOLO-V3 Tiny inference.")
 parser.add_argument("--branch", default=2, type=int, help="branch size")
 
 if detection_type == 'helmet':
-    parser.add_argument("--model", default='../save/helmet/helmet_tiny_yolov3_helmet540_960.tflite', type=str, help="Model to load.")
-    parser.add_argument("--anchors", default='../data/anchors/helmet_540_960_6_anchors.txt', type=str, help="Anchors file.")
-    parser.add_argument("--classes", default='../data/classes/helmet.names', type=str, help="Classes (.names) file.")
+    parser.add_argument("--model", default='save/helmet/helmet_tiny_yolov3_helmet540_960.tflite',
+                        type=str, help="Model to load.")
+    parser.add_argument("--anchors", default='data/anchors/helmet_540_960_6_anchors.txt', type=str,
+                        help="Anchors file.")
+    parser.add_argument("--classes", default='data/classes/helmet.names', type=str, help="Classes (.names) file.")
 elif detection_type == 'pedestrian':
-    parser.add_argument("--model", default='../save/pedestrian/pedestrians_tiny_yolov3_540_960_test_IO_uint8.tflite', type=str, help="Model to load.")
-    # parser.add_argument("--model", default='../save/pedestrian/pedestrians_tiny_yolov3_540_960.tflite', type=str, help="Model to load.")
-    parser.add_argument("--anchors", default='../data/anchors/pedestrian_540_960_6_anchors.txt', type=str, help="Anchors file.")
-    parser.add_argument("--classes", default='../data/classes/pedestrian.names', type=str, help="Classes (.names) file.")
-elif detection_type == 'motorbike_bicycle':
-    parser.add_argument("--model", default='../save/motorbike_bicycle/motorbike_bicycle_tiny_yolov3_540_960.tflite', type=str, help="Model to load.")
-    # parser.add_argument("--model", default='../save/pedestrian/pedestrians_tiny_yolov3_540_960.tflite', type=str, help="Model to load.")
-    parser.add_argument("--anchors", default='../data/anchors/motorbike_bicycle_540_960_6_anchors.txt', type=str, help="Anchors file.")
-    parser.add_argument("--classes", default='../data/classes/motorbike_bicycle.names', type=str, help="Classes (.names) file.")
+    parser.add_argument("--model", default='save/pedestrian/pedestrians_tiny_yolov4_540_960_IO_uint8.tflite',
+                        type=str, help="Model to load.")
+    parser.add_argument("--anchors", default='data/anchors/pedestrian_540_960_6_anchors.txt', type=str,
+                        help="Anchors file.")
+    parser.add_argument("--classes", default='data/classes/pedestrian.names', type=str, help="Classes (.names) file.")
+elif detection_type == 'snow_panther':
+    parser.add_argument("--model", default='save/snow_panther/snow_panther_tiny_yolov3_540_960_IO_uint8.tflite',
+                        type=str, help="Model to load.")
+    parser.add_argument("--anchors", default='data/anchors/snow_panther_540_960_6_anchors.txt',
+                        type=str, help="Anchors file.")
+    parser.add_argument("--classes", default='data/classes/snow_panther.names',
+                        type=str, help="Classes (.names) file.")
 else:
     print("detection type not support")
     pass
 
+parser.add_argument("--big_first", default=True, type=bool, help="big_first.")
 parser.add_argument("--BGR2RGB", default=False, type=bool, help="BGR2RGB.")
 
-parser.add_argument("--score_threshold", help="Detection threshold.", type=float, default=0.75)
+parser.add_argument("--score_threshold", help="Detection threshold.", type=float, default=0.6)
 parser.add_argument("--nms_threshold", help="NMS threshold.", type=float, default=0.45)
 
-parser.add_argument("--image", default='../data/images/pedestrian/', type=str, help="Run inference on image.")
-parser.add_argument("--deteciton_out", default='../data/detection/test/', type=str, help="detection out to save.")
-parser.add_argument("--rtsp_url", default='rtsp://admin:starblaze123@172.16.65.40:554/h264/1/main/av_stream', type=str, help="rtsp url.")
+parser.add_argument("--image", default='data/images/pedestrian/', type=str, help="Run inference on image.")
+parser.add_argument("--deteciton_out", default='data/detection/test/', type=str, help="detection out to save.")
+parser.add_argument("--rtsp_url", default='rtsp://admin:starblaze123@172.16.65.40:554/h264/1/main/av_stream',
+                    type=str, help="rtsp url.")
 args = parser.parse_args()
 
 def make_interpreter(model_file, edge_tpu=False):
@@ -65,59 +69,9 @@ def get_interpreter_details(interpreter):
     return input_details, output_details, input_shape
 
 # Run YOLO inference on the image, returns detected boxes
-def inference_modify(interpreter, oriImgShape, imgData, anchors, stride, classNum):
-    input_details, output_details, net_input_shape = \
-            get_interpreter_details(interpreter)
-
-    # imgData = np.divide(imgData, 255.).astype(np.float32)
-
-    input_detail = input_details[0]
-    default_scale, default_zero_point = 0, 0
-    if input_detail['quantization'] != (default_scale, default_zero_point):
-        # Quantize the input
-        scale, zero_point = input_detail['quantization']
-        input_tensor = imgData / scale + zero_point
-        input_tensor = np.array(input_tensor, dtype=input_detail['dtype'])
-
-    # Set input tensor
-    interpreter.set_tensor(input_details[0]['index'], input_tensor)
-
-    timeNode1 = time()
-    # Run model
-    interpreter.invoke()
-    timeNode2 = time()
-    # print("Net forward-pass time: {(timeNode2-timeNode1)*1000} ms.")
-
-    output_layer = ['Identity', 'Identity_1']
-    pred_bbox = []
-    # print(stride)
-    for i, output_name in enumerate(output_layer):
-        for output_branch in output_details:
-            if output_branch['name'] == output_name:
-                out = interpreter.get_tensor(output_branch['index'])
-                if output_branch['dtype'] == np.uint8 and output_branch['quantization'] != (0, 0):     #convert UINT8 to FP32
-                    scale, zero = output_branch['quantization']
-                    out = (out.astype(np.float32) - zero) * scale
-
-                out = decode(out, anchors, stride, i, classNum)
-                pred_bbox.append(np.reshape(out, (-1, np.shape(out)[-1])))
-                break
-
-    pred_bbox = np.concatenate(pred_bbox, axis=0)
-
-    bboxes = postprocess_boxes(pred_bbox, oriImgShape, net_input_shape, args.score_threshold)
-
-    bboxes = nms(bboxes, args.nms_threshold, method='nms')
-    timeNode3 = time()
-    # print(f"postprocess_boxes pass time: {(timeNode3-timeNode2)*1000} ms.")
-
-    return bboxes
-
-# Run YOLO inference on the image, returns detected boxes
 def inference(interpreter, oriImgShape, imgData, anchors, stride, classNum):
     input_details, output_details, net_input_shape = \
             get_interpreter_details(interpreter)
-    # if args.input_output_tensor_quant:
     if input_details[0]['dtype'] == np.uint8:
         #如果input和output都量化为UINT8，就直接输入图片推理
         imgData = imgData.astype(np.uint8)
@@ -135,21 +89,18 @@ def inference(interpreter, oriImgShape, imgData, anchors, stride, classNum):
     timeNode2 = time()
     # print("Net forward-pass time: {(timeNode2-timeNode1)*1000} ms.")
 
-    output_layer = ['Identity', 'Identity_1']
-    # output_layer = ['Identity']
-
     pred_bbox = []
     # print(stride)
-    for i, output_name in enumerate(output_layer):
-        for output_branch in output_details:
-            if output_branch['name'] == output_name:
-                out = interpreter.get_tensor(output_branch['index'])
-                if output_branch['dtype'] == np.uint8 and output_branch['quantization'] != (0, 0):     #convert UINT8 to FP32
-                    scale, zero = output_branch['quantization']
-                    out = (out.astype(np.float32) - zero) * scale
-                out = decode(out, anchors, stride, i, classNum)
-                pred_bbox.append(np.reshape(out, (-1, np.shape(out)[-1])))
-                break
+    for i in range(args.branch):
+        if args.big_first:
+            out = interpreter.get_tensor(output_details[1-i]['index'])
+        else:
+            out = interpreter.get_tensor(output_details[i]['index'])
+        if output_details[i]['dtype'] == np.uint8 and output_details[i]['quantization'] != (0, 0):
+            scale, zero = output_details[i]['quantization']
+            out = (out.astype(np.float32) - zero) * scale
+        out = decode(out, anchors, stride, i, classNum)
+        pred_bbox.append(np.reshape(out, (-1, np.shape(out)[-1])))
 
     pred_bbox = np.concatenate(pred_bbox, axis=0)
 
@@ -159,7 +110,6 @@ def inference(interpreter, oriImgShape, imgData, anchors, stride, classNum):
     # print(f"postprocess_boxes pass time: {(timeNode3-timeNode2)*1000} ms.")
 
     return bboxes
-
 
 def image_inf(interpreter):
     anchors = get_anchors(args.anchors, args.branch)
@@ -180,11 +130,11 @@ def image_inf(interpreter):
             imgData = cv2.cvtColor(np.copy(imgMat), cv2.COLOR_BGR2RGB)
         else:
             imgData = np.copy(imgMat)
-        imgData = image_preporcess(imgData, input_shape[1:3])
+        imgData = image_preprocess(imgData, input_shape[1:3])
 
         # Add batch dimension
         imgData = np.expand_dims(imgData, 0)
-        # print(f"image_preporcess speed: : {(time()-start) * 1000} ms.")
+        # print(f"image_preprocess speed: : {(time()-start) * 1000} ms.")
 
         # Run inference, get boxes
         stride = [8,16,32]
@@ -222,12 +172,12 @@ def video_inf(interpreter, path):
             imgData = cv2.cvtColor(np.copy(frame), cv2.COLOR_BGR2RGB)
         else:
             imgData = np.copy(frame)
-        imgData = image_preporcess(imgData, input_shape[1:3])
+        imgData = image_preprocess(imgData, input_shape[1:3])
 
         # Add batch dimension
         imgData = np.expand_dims(imgData, 0)
         # Run inference, get boxes
-        # print(f"image_preporcess speed: : {(time() - start) * 1000} ms.")
+        # print(f"image_preprocess speed: : {(time() - start) * 1000} ms.")
 
         stride = [8,16,32]
         bboxes = inference(interpreter, frame.shape[:2], imgData, anchors, stride[3-args.branch], len(classes))

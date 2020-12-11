@@ -1,24 +1,23 @@
 # coding: utf-8
 
 import tensorflow.lite as tflite
-from tensorflow import keras
 import tensorflow as tf
 import numpy as np
 import cv2
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
-# modelFile = '../save/helmet/helmet_mobilenetv2_yolov3_540_960.tflite'
-# IOQmodelFile = '../save/helmet/helmet_mobilenetv2_yolov3_540_960_IO_fp32.tflite'
+# modelFile = 'save/helmet/helmet_mobilenetv2_yolov3_540_960.tflite'
+# IOQmodelFile = 'save/helmet/helmet_mobilenetv2_yolov3_540_960_IO_fp32.tflite'
 
-# modelFile = '../save/pedestrian/pedestrians_tiny_yolov3_540_960.tflite'
-# IOQmodelFile = '../save/pedestrian/pedestrians_tiny_yolov3_540_960_IO_fp32.tflite'
+modelFile = 'save/pedestrian/pedestrians_tiny_yolov4_540_960.tflite'
+IOQmodelFile = 'save/pedestrian/pedestrians_tiny_yolov4_540_960_IO_uint8.tflite'
 
-# modelFile = '../save/pedestrian/tflite/tiny_yolov3_pedstrian_540_960_1W_final.tflite'
-# IOQmodelFile = '../save/pedestrian/tflite/tiny_yolov3_pedstrian_540_960_1W_int8_final.tflite'
+#modelFile = 'save/snow_panther/snow_panther_tiny_yolov3_540_960.tflite'
+#IOQmodelFile = 'save/snow_panther/snow_panther_tiny_yolov3_540_960_IO_uint8.tflite'
 
-# modelFile = '../save/helmet/helmet_tiny_yolov3_helmet540_960.tflite'
-# IOQmodelFile = '../save/helmet/helmet_tiny_yolov3_helmet540_960_IO_fp32.tflite'
+# modelFile = 'save/helmet/helmet_tiny_yolov3_helmet540_960.tflite'
+# IOQmodelFile = 'save/helmet/helmet_tiny_yolov3_helmet540_960_IO_fp32.tflite'
 
 
 tiny_yolo_layerName = [
@@ -52,9 +51,8 @@ tiny_yolo_layerName = [
     'model/conv2d_10/Conv2D_bias',
     'model/tf_op_layer_resize/ResizeNearestNeighbor/resize/ResizeNearestNeighbor',
     # 'model/tf_op_layer_resize/ResizeBilinear/resize/ResizeBilinear',
-    'model/tf_op_layer_resize/ResizeNearestNeighbor/resize/ResizeNearestNeighbor/size',
-    # 'model/tf_op_layer_resize/ResizeBilinear/resize/ResizeBilinear/size',
-    'model/tf_op_layer_concat/concat',
+    # 'model/tf_op_layer_concat/concat',
+    'model/concatenate/concat',
     # 'model/tf_op_layer_add/add',
     'model/conv2d_11/Conv2D/ReadVariableOp/resource',
     'model/conv2d_11/Conv2D_bias',
@@ -91,9 +89,10 @@ def inference(interpreter, imgMat):
     # if args.input_output_tensor_quant:
     if input_details[0]['dtype'] == np.uint8:
         # 如果input和output都量化为INT8，就直接输入图片推理
+        print("Input tensor type: uint8")
         imgData = imgMat.astype(np.uint8)
     else:
-        print("Input tensor not quant")
+        print("Input tensor type: fp32")
         # Normalize image from 0 to 1
         imgData = np.divide(imgMat, 255.).astype(np.float32)
     # Set input tensor
@@ -120,8 +119,6 @@ def layerOutputCompile(interpreterTFLite, interpreterPTQ):
             print('quantization')
             scale, zero = tensorINT8['quantization']
             outINT8 = (outINT8.astype(np.float32) - zero) * scale
-        # out = (out.astype(np.float32) - zero) * scale
-        # d1 = mean_squared_error(outFP32, outINT8)
         d1 = cosine_distance(outFP32.flatten(), outINT8.flatten())
 
         print(tensorFP32['name'], ':', d1)
@@ -215,18 +212,10 @@ def cosine_distance(a, b):
     return 1 - result
 
 
-def featureCompile():
-    featureINUT8 = np.load('./a.npy')
-    featureFP32 = np.load('./b.npy')
-
-    print(cosine_distance(featureINUT8, featureFP32))
-
-
-
 if __name__ == '__main__':
     # featureCompile()
     # exit()
-    imgMat = cv2.imread('./test.jpg')
+    imgMat = cv2.imread('tools/test.jpg')
     imgMat = np.expand_dims(imgMat, 0)
     interpreterTFLite = tflite.Interpreter(model_path=modelFile)
     interpreterTFLite.allocate_tensors()

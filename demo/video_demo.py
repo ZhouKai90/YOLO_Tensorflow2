@@ -50,7 +50,7 @@ def main(_argv):
 
         original_image_size = frame.shape[:2]
 
-        image_data = utils.image_preporcess(np.copy(frame), [FLAGS.input_size[0], FLAGS.input_size[1]])
+        image_data = utils.image_preprocess(np.copy(frame), [FLAGS.input_size[0], FLAGS.input_size[1]])
         image_data = image_data[np.newaxis, ...]
 
         t1 = time.time()

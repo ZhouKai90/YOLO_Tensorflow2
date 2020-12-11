@@ -16,7 +16,7 @@ class BatchNormalization(tf.keras.layers.BatchNormalization):
         training = tf.logical_and(training, self.trainable)
         return super().call(x, training)
 
-def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='relu'):
+def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='relu6'):
     if downsample:
         input_layer = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))(input_layer)
         padding = 'valid'
@@ -46,22 +46,27 @@ def mish(x):
     return x * tf.math.tanh(tf.math.softplus(x))
     # return tf.keras.layers.Lambda(lambda x: x*tf.tanh(tf.math.log(1+tf.exp(x))))(x)
 
-def residual_block(input_layer, input_channel, filter_num1, filter_num2):
+def residual_block(input_layer, input_channel, filter_num1, filter_num2, activate_type='relu'):
     short_cut = input_layer
-    conv = convolutional(input_layer, filters_shape=(1, 1, input_channel, filter_num1))
-    conv = convolutional(conv       , filters_shape=(3, 3, filter_num1,   filter_num2))
+    conv = convolutional(input_layer, filters_shape=(1, 1, input_channel, filter_num1), activate_type=activate_type)
+    conv = convolutional(conv       , filters_shape=(3, 3, filter_num1,   filter_num2), activate_type=activate_type)
 
     residual_output = short_cut + conv
     return residual_output
 
+def route_group(input_layer, groups, group_id):
+    convs = tf.split(input_layer, num_or_size_splits=groups, axis=-1)
+    return convs[group_id]
+
 def upsample(input_layer, method="resize"):
     assert method in ["resize", "deconv"]
     if method == 'resize':
+        return tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2), method='nearest')
         # return tf.image.resize(input_layer, [input_layer.shape[1] * 2, input_layer.shape[2] * 2], method='bilinear')
-        return tf.image.resize(input_layer, [input_layer.shape[1] * 2, input_layer.shape[2] * 2], method='nearest')
     if method == 'deconv':
         numm_filter = input_layer.shape.as_list()[-1]
-        return tf.keras.layers.Conv2DTranspose(numm_filter, kernel_size=2, padding='same',strides=(2, 2))(input_layer)
+        return tf.keras.layers.Conv2DTranspose(numm_filter, kernel_size=2, padding='valid',strides=(2, 2))(input_layer)
+        # return tf.keras.layers.Conv2DTranspose(numm_filter, kernel_size=2, padding='same',strides=(2, 2))(input_layer)
         # return tf.keras.layers.UpSampling2D(size=(2, 2))(input_layer)
 
 def make_divisible(v, divisor, min_value=None):
@@ -74,25 +79,25 @@ def make_divisible(v, divisor, min_value=None):
     return new_v
 
 def correct_pad(inputs, kernel_size):
-  """Returns a tuple for zero-padding for 2D convolution with downsampling.
+    """Returns a tuple for zero-padding for 2D convolution with downsampling.
 
-  Arguments:
+    Arguments:
     inputs: Input tensor.
     kernel_size: An integer or tuple/list of 2 integers.
 
-  Returns:
+    Returns:
     A tuple.
-  """
-  img_dim = 2 if backend.image_data_format() == 'channels_first' else 1
-  input_size = backend.int_shape(inputs)[img_dim:(img_dim + 2)]
-  if isinstance(kernel_size, int):
-    kernel_size = (kernel_size, kernel_size)
-  if input_size[0] is None:
-    adjust = (1, 1)
-  else:
-    adjust = (1 - input_size[0] % 2, 1 - input_size[1] % 2)
-  correct = (kernel_size[0] // 2, kernel_size[1] // 2)
-  return ((correct[0] - adjust[0], correct[0]),
+    """
+    img_dim = 2 if backend.image_data_format() == 'channels_first' else 1
+    input_size = backend.int_shape(inputs)[img_dim:(img_dim + 2)]
+    if isinstance(kernel_size, int):
+        kernel_size = (kernel_size, kernel_size)
+    if input_size[0] is None:
+        adjust = (1, 1)
+    else:
+        adjust = (1 - input_size[0] % 2, 1 - input_size[1] % 2)
+    correct = (kernel_size[0] // 2, kernel_size[1] // 2)
+    return ((correct[0] - adjust[0], correct[0]),
           (correct[1] - adjust[1], correct[1]))
 
 def inverted_res_block(inputs, expansion, filters, stride, alpha, block_id):

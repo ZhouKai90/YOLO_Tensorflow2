@@ -6,7 +6,7 @@ import shutil
 import numpy as np
 import tensorflow as tf
 from core.dataset import Dataset
-from cfg.config import cfg
+from cfg.config import CFG
 from core.model_factory import get_model, compute_loss
 from tensorflow import keras
 import tensorflow_model_optimization as tfmot
@@ -20,14 +20,14 @@ if gpus:
 
 trainset = Dataset('train')
 steps_per_epoch = len(trainset)
-global_steps = tf.Variable(steps_per_epoch*cfg.TRAIN.CONTINUE_EPOCH+1, trainable=False, dtype=tf.int64)
-warmup_steps = cfg.TRAIN.WARMUP_EPOCHS * steps_per_epoch
-total_steps = cfg.TRAIN.EPOCHS * steps_per_epoch
+global_steps = tf.Variable(steps_per_epoch*CFG.TRAIN.CONTINUE_EPOCH+1, trainable=False, dtype=tf.int64)
+warmup_steps = CFG.TRAIN.WARMUP_EPOCHS * steps_per_epoch
+total_steps = CFG.TRAIN.EPOCHS * steps_per_epoch
 
 optimizer = tf.keras.optimizers.Adam()
 
-if os.path.exists(cfg.TRAIN.LOG_DIR): shutil.rmtree(cfg.TRAIN.LOG_DIR)
-writer = tf.summary.create_file_writer(cfg.TRAIN.LOG_DIR)
+if os.path.exists(CFG.TRAIN.LOG_DIR): shutil.rmtree(CFG.TRAIN.LOG_DIR)
+writer = tf.summary.create_file_writer(CFG.TRAIN.LOG_DIR)
 
 def train_step(model, image_data, target, epoch):
     with tf.GradientTape() as tape:
@@ -35,7 +35,7 @@ def train_step(model, image_data, target, epoch):
         giou_loss=conf_loss=prob_loss=0
 
         # optimizing process
-        for i in range(cfg.YOLO.BRANCH_SIZE):
+        for i in range(CFG.YOLO.BRANCH_SIZE):
             conv, pred = pred_result[i*2], pred_result[i*2+1]
             loss_items = compute_loss(pred, conv, *target[i], i)
             giou_loss += loss_items[0]
@@ -56,9 +56,9 @@ def train_step(model, image_data, target, epoch):
         # update learning rate
         global_steps.assign_add(1)
         if global_steps < warmup_steps:
-            lr = global_steps / warmup_steps *cfg.TRAIN.LR_INIT
+            lr = global_steps / warmup_steps *CFG.TRAIN.LR_INIT
         else:
-            lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
+            lr = CFG.TRAIN.LR_END + 0.5 * (CFG.TRAIN.LR_INIT - CFG.TRAIN.LR_END) * (
                 (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
             )
         optimizer.lr.assign(lr.numpy())
@@ -75,13 +75,13 @@ def train_step(model, image_data, target, epoch):
 if __name__ == '__main__':
     model = get_model()
     # keras.utils.plot_model(model, "./model.png", show_shapes=True)
-    if cfg.TRAIN.PRETRAIN is not None:
-        model.load_weights(cfg.TRAIN.PRETRAIN)
-        print('Restoring weights from: %s ... ' % cfg.TRAIN.PRETRAIN)
+    if CFG.TRAIN.PRETRAIN is not None:
+        model.load_weights(CFG.TRAIN.PRETRAIN)
+        print('Restoring weights from: %s ... ' % CFG.TRAIN.PRETRAIN)
 
     model = tfmot.quantization.keras.quantize_model(model)
     img_write = True
-    for epoch in range(cfg.TRAIN.CONTINUE_EPOCH, cfg.TRAIN.EPOCHS):
+    for epoch in range(CFG.TRAIN.CONTINUE_EPOCH, CFG.TRAIN.EPOCHS):
         for image_data, target in trainset:
             # 将第一个batch的图片写入TensorBoard
             if img_write is True:
@@ -91,8 +91,8 @@ if __name__ == '__main__':
 
             train_step(model, image_data, target, epoch)
         if epoch % 2 == 0:
-            model.save_weights(cfg.TRAIN.CKPT_DIR+"model_epoch{}".format(epoch))
+            model.save_weights(CFG.TRAIN.CKPT_DIR+"model_epoch{}".format(epoch))
         # model.save('save/yolov3', save_format='tf')
-    model.save_weights(cfg.TRAIN.CKPT_DIR + "model_final")
-    model.save(cfg.TRAIN.CKPT_DIR+"saved_model.h5")
+    model.save_weights(CFG.TRAIN.CKPT_DIR + "model_final")
+    model.save(CFG.TRAIN.CKPT_DIR+"saved_model.h5")
 

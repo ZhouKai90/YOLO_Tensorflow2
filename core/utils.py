@@ -5,6 +5,7 @@ import cv2
 import random
 import colorsys
 import numpy as np
+from core.iou import bboxes_iou
 
 def load_weights(model, weights_file):
     """
@@ -66,7 +67,7 @@ def get_anchors(anchors_path, branch_size):
     return anchors.reshape(branch_size, 3, 2)
 
 
-def image_preporcess(image, target_size, gt_boxes=None, data_type='float32'):
+def image_preprocess(image, target_size, gt_boxes=None):
 
     ih, iw    = target_size
     h,  w, _  = image.shape
@@ -74,12 +75,11 @@ def image_preporcess(image, target_size, gt_boxes=None, data_type='float32'):
     scale = min(iw/w, ih/h)
     nw, nh  = int(scale * w), int(scale * h)
     image_resized = cv2.resize(image, (nw, nh))
+
     image_paded = np.full(shape=[ih, iw, 3], fill_value=128.0)
     dw, dh = (iw - nw) // 2, (ih-nh) // 2
     image_paded[dh:nh+dh, dw:nw+dw, :] = image_resized
-
-    if data_type == 'float32':
-        image_paded = np.divide(image_paded, 255.).astype(np.float32)
+    image_paded = image_paded / 255.
 
     if gt_boxes is None:
         return image_paded
@@ -124,27 +124,6 @@ def draw_bbox(image, bboxes, classes_file, show_label=True):
                         fontScale, (0, 0, 0), bbox_thick//2, lineType=cv2.LINE_AA)
 
     return image
-
-
-
-def bboxes_iou(boxes1, boxes2):
-
-    boxes1 = np.array(boxes1)
-    boxes2 = np.array(boxes2)
-
-    boxes1_area = (boxes1[..., 2] - boxes1[..., 0]) * (boxes1[..., 3] - boxes1[..., 1])
-    boxes2_area = (boxes2[..., 2] - boxes2[..., 0]) * (boxes2[..., 3] - boxes2[..., 1])
-
-    left_up       = np.maximum(boxes1[..., :2], boxes2[..., :2])
-    right_down    = np.minimum(boxes1[..., 2:], boxes2[..., 2:])
-
-    inter_section = np.maximum(right_down - left_up, 0.0)
-    inter_area    = inter_section[..., 0] * inter_section[..., 1]
-    union_area    = boxes1_area + boxes2_area - inter_area
-    ious          = np.maximum(1.0 * inter_area / union_area, np.finfo(np.float32).eps)
-
-    return ious
-
 
 def nms(bboxes, iou_threshold, sigma=0.3, method='nms'):
     """

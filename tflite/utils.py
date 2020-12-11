@@ -225,7 +225,7 @@ def decode(conv_output, ANCHORS, STRIDES, i=0, classes_num=2):
     return np.concatenate([pred_xywh, pred_conf, pred_prob], axis=-1)
 
 
-def image_preporcess(image, target_size):
+def image_preprocess(image, target_size):
 
     ih, iw    = target_size
     h,  w, _  = image.shape

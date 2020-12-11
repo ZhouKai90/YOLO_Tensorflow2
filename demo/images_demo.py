@@ -14,14 +14,15 @@ if gpus:
     tf.config.experimental.set_visible_devices(devices=gpus[1], device_type='GPU')
     tf.config.experimental.set_memory_growth(device=gpus[1], enable=True)
 
-flags.DEFINE_string('savedmodel',   'save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960',          'path to savedmodel')
-flags.DEFINE_string('classes_file',        'data/classes/pedestrian.names',                               'classes file')
+# flags.DEFINE_string('savedmodel',   'save/pedestrian/ckpt/mobilenetv2_yolov3_540_960/saved_model',          'path to savedmodel')
+# flags.DEFINE_string('savedmodel',   'save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960',          'path to savedmodel')
+# flags.DEFINE_string('classes_file',        'data/classes/pedestrian.names',                               'classes file')
 
-# flags.DEFINE_string('savedmodel',   'save/helmet/savedmodel/mobilenetv2_yolov3_540_960',          'path to savedmodel')
-# flags.DEFINE_string('classes_file',        'data/classes/helmet.names',                               'classes file')
+flags.DEFINE_string('savedmodel',   'save/helmet/savedmodel/mobilenetv2_yolov3_540_960',          'path to savedmodel')
+flags.DEFINE_string('classes_file',        'data/classes/helmet.names',                               'classes file')
 
 flags.DEFINE_string('detection_out_dir',  'data/detection/test/',                     'images to quan')
-flags.DEFINE_string('images_dir',  'data/images/pedestrian/',                     'images to quan')
+flags.DEFINE_string('images_dir',  'data/images/test/',                     'images to quan')
 flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
 flags.DEFINE_float('score_thres',   0.5,                                    'define score threshold')
 flags.DEFINE_float('nms_thres',   0.45,                                    'define nms threshold')
@@ -45,7 +46,7 @@ def main(_argv):
             image_data = cv2.cvtColor(np.copy(original_image), cv2.COLOR_BGR2RGB)
         else:
             image_data = np.copy(original_image)
-        image_data = utils.image_preporcess(image_data, FLAGS.input_size)
+        image_data = utils.image_preprocess(image_data, FLAGS.input_size)
         image_data = image_data[np.newaxis, ...]
 
         t1 = time.time()

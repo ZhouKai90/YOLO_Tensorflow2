@@ -5,9 +5,9 @@ import xml.etree.ElementTree as ET
 import random
 import os
 import numpy as np
-from cfg.config import cfg
+from cfg.config import CFG
 
-def create_imagesets_txt(imgsetPath, annotationsPath, trainvalPercent=0.95):
+def create_imagesets_txt(imgsetPath, annotationsPath, trainvalPercent=0.99):
     totalXml = os.listdir(annotationsPath)   # 获取标注文件（file_name.xml）
     # 训练数据集占总数据集的比例
     # print(trainvalPercent)
@@ -77,7 +77,7 @@ def gen_TFAnno_txt(TFAnnoFile, annoPath, imgSetTxt, JPEGImgPath):
         imgName = imgName.strip()
         xmlPath = annoPath + '/' + imgName + '.xml'
         # objects = parse_xml(xmlPath, get_class_names(r'data/classes/pedestrian.names'))
-        objects = parse_xml(xmlPath, get_class_names(cfg.YOLO.CLASSES))
+        objects = parse_xml(xmlPath, get_class_names(CFG.YOLO.CLASSES))
         if objects:
             objects[0] = JPEGImgPath + '/' + imgName + '.jpg'
             if os.path.exists(objects[0]):
@@ -219,8 +219,8 @@ if __name__ == '__main__':
     # if target_resize is speficied [416,416], the anchors are on the resized image scale
     # if target_resize is set to None, the anchors are on the original image scale
 
-    target_size         =   cfg.TRAIN.INPUT_SIZE
-    VOC2020             =   cfg.TRAIN.DATASET_PATH
+    target_size         =   CFG.TRAIN.INPUT_SIZE
+    VOC2020             =   CFG.DATASET.PATH
     imageSetPath        =   VOC2020 + r'ImageSets/Main/'  # txt文件保存目录
     annotationsPath     =   VOC2020 + r'Annotations'
     JPEGImgPath         =   VOC2020 + r'JPEGImages'
@@ -228,7 +228,7 @@ if __name__ == '__main__':
     trainvalImgSetTxt   =   imageSetPath + r'trainval.txt'
     testImgSetTxt       =   imageSetPath + r'test.txt'
 
-    nameclassFile       =    cfg.YOLO.CLASSES
+    nameclassFile       =    CFG.YOLO.CLASSES
 
     create_imagesets_txt(imageSetPath, annotationsPath, trainvalPercent=0.95)
     namesDir = get_class_names(nameclassFile)
@@ -242,7 +242,7 @@ if __name__ == '__main__':
     anno_result = parse_anno(trainTFAnnoTxt, target_size=target_size)
     print("Total num for get kmeans: ", anno_result.shape)
 
-    anchors, ave_iou = get_kmeans(anno_result, cfg.YOLO.BRANCH_SIZE*3)       #for tiny YOLO
+    anchors, ave_iou = get_kmeans(anno_result, CFG.YOLO.BRANCH_SIZE*3)       #for tiny YOLO
 
     anchor_string = ''
     for anchor in anchors:
