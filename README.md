@@ -1,12 +1,14 @@
 # YOLO_Tensorflow2
 
-1、基于tensorflow2.3，安全帽检测、行人检测和自定义数据集训练
+1、基于tensorflow2.3，安全帽检测、行人检测、人头检测和自定义数据集训练
 
-2、支持yolov3、tiny-yolov3、mobilenetv2-yolov3模型
+2、支持yolov3、tiny-yolov3、mobilenetv2-yolov3、peleenet-yolov3模型
 
 3、支持tflite转换和量化
 
 4、sovedmodel、tflite推理测试demo
+
+5、支持tensorRT模型转换和推理
 
 
 
@@ -19,7 +21,5 @@
 #### TO DO
 
 1、行人检测量化之后tflite推理异常
-
-
 
 本工程是参考https://github.com/YunYang1994/TensorFlow2.0-Examples/tree/master/4-Object_Detection/YOLOV3，在此基础上进行的修改，特此说明
