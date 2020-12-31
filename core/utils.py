@@ -59,15 +59,18 @@ def read_class_names(class_file_name):
     return names
 
 
-def get_anchors(anchors_path, branch_size):
+def get_anchors(anchors_path, branch_size=None):
     '''loads the anchors from a file'''
     with open(anchors_path) as f:
         anchors = f.readline()
     anchors = np.array(anchors.split(','), dtype=np.float32)
+    if branch_size==None:
+        branch_size = int(len(anchors) / (3*2))  #每个格点预测3个anchor
+        assert branch_size == 3 or branch_size == 2
     return anchors.reshape(branch_size, 3, 2)
 
 
-def image_preprocess(image, target_size, gt_boxes=None):
+def image_preprocess(image, target_size, gt_boxes=None, dtype='fp32'):
 
     ih, iw    = target_size
     h,  w, _  = image.shape
@@ -79,7 +82,8 @@ def image_preprocess(image, target_size, gt_boxes=None):
     image_paded = np.full(shape=[ih, iw, 3], fill_value=128.0)
     dw, dh = (iw - nw) // 2, (ih-nh) // 2
     image_paded[dh:nh+dh, dw:nw+dw, :] = image_resized
-    image_paded = image_paded / 255.
+    if dtype == 'fp32':
+        image_paded = image_paded / 255.
 
     if gt_boxes is None:
         return image_paded

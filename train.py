@@ -14,11 +14,12 @@ from tensorflow import keras
 # os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 gpus = tf.config.experimental.list_physical_devices(device_type="GPU")
 if gpus:
-    tf.config.experimental.set_visible_devices(devices=gpus[2:], device_type='GPU')
+    tf.config.experimental.set_visible_devices(devices=gpus[1], device_type='GPU')
     # for gpu in gpus[1:3]:
     #     tf.config.experimental.set_memory_growth(device=gpu, enable=True)
 
 trainset = Dataset('train')
+testset = Dataset('test')
 steps_per_epoch = len(trainset)
 global_steps = tf.Variable(steps_per_epoch*CFG.TRAIN.CONTINUE_EPOCH+1, trainable=False, dtype=tf.int64)
 warmup_steps = CFG.TRAIN.WARMUP_EPOCHS * steps_per_epoch
@@ -48,8 +49,8 @@ def train_step(model, image_data, target, epoch):
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         tf.print("=> Epoch %2d    step %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
                  "prob_loss: %4.2f   total_loss: %4.2f" %(epoch,
-                                                          global_steps,
-                                                          total_steps,
+                                                          global_steps-steps_per_epoch*epoch,
+                                                          steps_per_epoch,
                                                           optimizer.lr.numpy(),
                                                           giou_loss, conf_loss,
                                                           prob_loss, total_loss))
@@ -72,7 +73,7 @@ def train_step(model, image_data, target, epoch):
             tf.summary.scalar("loss/prob_loss", prob_loss, step=global_steps)
         writer.flush()
 
-def test_step(image_data, target):
+def test_step(image_data, target, epoch):
     with tf.GradientTape() as tape:
         pred_result = model(image_data, training=True)
         giou_loss = conf_loss = prob_loss = 0
@@ -86,13 +87,13 @@ def test_step(image_data, target):
 
         total_loss = giou_loss + conf_loss + prob_loss
 
-        tf.print("=> TEST STEP %4d   giou_loss: %4.2f   conf_loss: %4.2f   "
-                 "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, giou_loss, conf_loss,
+        tf.print("=> TEST EPOCH %4d   giou_loss: %4.2f   conf_loss: %4.2f   "
+                 "prob_loss: %4.2f   total_loss: %4.2f" % (epoch, giou_loss, conf_loss,
                                                            prob_loss, total_loss))
 
 if __name__ == '__main__':
     model = get_model()
-    keras.utils.plot_model(model, CFG.TRAIN.BACKBONE+"_model.png", show_shapes=True)
+    # keras.utils.plot_model(model, CFG.TRAIN.BACKBONE+"_model.png", show_shapes=True)
     if CFG.TRAIN.PRETRAIN is not None:
         model.load_weights(CFG.TRAIN.PRETRAIN)
         print('Restoring weights from: %s ... ' % CFG.TRAIN.PRETRAIN)
@@ -108,8 +109,10 @@ if __name__ == '__main__':
 
             train_step(model, image_data, target, epoch)
         if epoch % 2 == 0:
+            for image_data, target in testset:
+                test_step(image_data, target, epoch)
             model.save_weights(CFG.TRAIN.CKPT_DIR+"model_epoch{}".format(epoch))
         # model.save('save/yolov3', save_format='tf')
     model.save_weights(CFG.TRAIN.CKPT_DIR + "model_final")
-    model.save(CFG.TRAIN.CKPT_DIR+"saved_model", save_format='tf')
+    model.save(CFG.TRAIN.CKPT_DIR+"saved_model.h5")
 

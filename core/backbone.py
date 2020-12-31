@@ -6,30 +6,30 @@ import core.common as common
 
 def darknet53(input_data):
 
-    input_data = common.convolutional(input_data, (3, 3,  3,  32))
-    input_data = common.convolutional(input_data, (3, 3, 32,  64), downsample=True)
+    input_data = common.conv_bn_relu(input_data, (3, 3,  3,  32))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 32,  64), downsample=True)
 
     for i in range(1):
         input_data = common.residual_block(input_data,  64,  32, 64)
 
-    input_data = common.convolutional(input_data, (3, 3,  64, 128), downsample=True)
+    input_data = common.conv_bn_relu(input_data, (3, 3,  64, 128), downsample=True)
 
     for i in range(2):
         input_data = common.residual_block(input_data, 128,  64, 128)
 
-    input_data = common.convolutional(input_data, (3, 3, 128, 256), downsample=True)
+    input_data = common.conv_bn_relu(input_data, (3, 3, 128, 256), downsample=True)
 
     for i in range(8):
         input_data = common.residual_block(input_data, 256, 128, 256)
 
     route_1 = input_data
-    input_data = common.convolutional(input_data, (3, 3, 256, 512), downsample=True)
+    input_data = common.conv_bn_relu(input_data, (3, 3, 256, 512), downsample=True)
 
     for i in range(8):
         input_data = common.residual_block(input_data, 512, 256, 512)
 
     route_2 = input_data
-    input_data = common.convolutional(input_data, (3, 3, 512, 1024), downsample=True)
+    input_data = common.conv_bn_relu(input_data, (3, 3, 512, 1024), downsample=True)
 
     for i in range(4):
         input_data = common.residual_block(input_data, 1024, 512, 1024)
@@ -38,136 +38,136 @@ def darknet53(input_data):
 
 def cspdarknet53(input_data):
 
-    input_data = common.convolutional(input_data, (3, 3,  3,  32), activate_type="mish")
-    input_data = common.convolutional(input_data, (3, 3, 32,  64), downsample=True, activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (3, 3,  3,  32), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (3, 3, 32,  64), downsample=True, activate_type="mish")
 
     route = input_data
-    route = common.convolutional(route, (1, 1, 64, 64), activate_type="mish")
-    input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
+    route = common.conv_bn_relu(route, (1, 1, 64, 64), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 64, 64), activate_type="mish")
     for i in range(1):
         input_data = common.residual_block(input_data,  64,  32, 64, activate_type="mish")
-    input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 64, 64), activate_type="mish")
 
     input_data = tf.concat([input_data, route], axis=-1)
-    input_data = common.convolutional(input_data, (1, 1, 128, 64), activate_type="mish")
-    input_data = common.convolutional(input_data, (3, 3, 64, 128), downsample=True, activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 128, 64), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (3, 3, 64, 128), downsample=True, activate_type="mish")
     route = input_data
-    route = common.convolutional(route, (1, 1, 128, 64), activate_type="mish")
-    input_data = common.convolutional(input_data, (1, 1, 128, 64), activate_type="mish")
+    route = common.conv_bn_relu(route, (1, 1, 128, 64), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 128, 64), activate_type="mish")
     for i in range(2):
         input_data = common.residual_block(input_data, 64,  64, 64, activate_type="mish")
-    input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 64, 64), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
 
-    input_data = common.convolutional(input_data, (1, 1, 128, 128), activate_type="mish")
-    input_data = common.convolutional(input_data, (3, 3, 128, 256), downsample=True, activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 128, 128), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (3, 3, 128, 256), downsample=True, activate_type="mish")
     route = input_data
-    route = common.convolutional(route, (1, 1, 256, 128), activate_type="mish")
-    input_data = common.convolutional(input_data, (1, 1, 256, 128), activate_type="mish")
+    route = common.conv_bn_relu(route, (1, 1, 256, 128), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 256, 128), activate_type="mish")
     for i in range(8):
         input_data = common.residual_block(input_data, 128, 128, 128, activate_type="mish")
-    input_data = common.convolutional(input_data, (1, 1, 128, 128), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 128, 128), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
 
-    input_data = common.convolutional(input_data, (1, 1, 256, 256), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 256, 256), activate_type="mish")
     route_1 = input_data
-    input_data = common.convolutional(input_data, (3, 3, 256, 512), downsample=True, activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (3, 3, 256, 512), downsample=True, activate_type="mish")
     route = input_data
-    route = common.convolutional(route, (1, 1, 512, 256), activate_type="mish")
-    input_data = common.convolutional(input_data, (1, 1, 512, 256), activate_type="mish")
+    route = common.conv_bn_relu(route, (1, 1, 512, 256), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 512, 256), activate_type="mish")
     for i in range(8):
         input_data = common.residual_block(input_data, 256, 256, 256, activate_type="mish")
-    input_data = common.convolutional(input_data, (1, 1, 256, 256), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 256, 256), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
 
-    input_data = common.convolutional(input_data, (1, 1, 512, 512), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 512, 512), activate_type="mish")
     route_2 = input_data
-    input_data = common.convolutional(input_data, (3, 3, 512, 1024), downsample=True, activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (3, 3, 512, 1024), downsample=True, activate_type="mish")
     route = input_data
-    route = common.convolutional(route, (1, 1, 1024, 512), activate_type="mish")
-    input_data = common.convolutional(input_data, (1, 1, 1024, 512), activate_type="mish")
+    route = common.conv_bn_relu(route, (1, 1, 1024, 512), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 1024, 512), activate_type="mish")
     for i in range(4):
         input_data = common.residual_block(input_data, 512, 512, 512, activate_type="mish")
-    input_data = common.convolutional(input_data, (1, 1, 512, 512), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 512, 512), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
 
-    input_data = common.convolutional(input_data, (1, 1, 1024, 1024), activate_type="mish")
-    input_data = common.convolutional(input_data, (1, 1, 1024, 512))
-    input_data = common.convolutional(input_data, (3, 3, 512, 1024))
-    input_data = common.convolutional(input_data, (1, 1, 1024, 512))
+    input_data = common.conv_bn_relu(input_data, (1, 1, 1024, 1024), activate_type="mish")
+    input_data = common.conv_bn_relu(input_data, (1, 1, 1024, 512))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 512, 1024))
+    input_data = common.conv_bn_relu(input_data, (1, 1, 1024, 512))
 
     input_data = tf.concat([tf.nn.max_pool(input_data, ksize=13, padding='SAME', strides=1), tf.nn.max_pool(input_data, ksize=9, padding='SAME', strides=1)
                             , tf.nn.max_pool(input_data, ksize=5, padding='SAME', strides=1), input_data], axis=-1)
-    input_data = common.convolutional(input_data, (1, 1, 2048, 512))
-    input_data = common.convolutional(input_data, (3, 3, 512, 1024))
-    input_data = common.convolutional(input_data, (1, 1, 1024, 512))
+    input_data = common.conv_bn_relu(input_data, (1, 1, 2048, 512))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 512, 1024))
+    input_data = common.conv_bn_relu(input_data, (1, 1, 1024, 512))
 
     return route_1, route_2, input_data
 
 def cspdarknet53_tiny(input_data):
-    input_data = common.convolutional(input_data, (3, 3, 3, 32), downsample=True)
-    input_data = common.convolutional(input_data, (3, 3, 32, 64), downsample=True)
-    input_data = common.convolutional(input_data, (3, 3, 64, 64))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 3, 32), downsample=True)
+    input_data = common.conv_bn_relu(input_data, (3, 3, 32, 64), downsample=True)
+    input_data = common.conv_bn_relu(input_data, (3, 3, 64, 64))
 
     route = input_data
     input_data = common.route_group(input_data, 2, 1)
-    input_data = common.convolutional(input_data, (3, 3, 32, 32))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 32, 32))
     route_1 = input_data
-    input_data = common.convolutional(input_data, (3, 3, 32, 32))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 32, 32))
     input_data = tf.concat([input_data, route_1], axis=-1)
-    input_data = common.convolutional(input_data, (1, 1, 32, 64))
+    input_data = common.conv_bn_relu(input_data, (1, 1, 32, 64))
     input_data = tf.concat([route, input_data], axis=-1)
     input_data = tf.keras.layers.MaxPool2D(2, 2, 'same')(input_data)
 
-    input_data = common.convolutional(input_data, (3, 3, 64, 128))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 64, 128))
     route = input_data
     input_data = common.route_group(input_data, 2, 1)
-    input_data = common.convolutional(input_data, (3, 3, 64, 64))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 64, 64))
     route_1 = input_data
-    input_data = common.convolutional(input_data, (3, 3, 64, 64))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 64, 64))
     input_data = tf.concat([input_data, route_1], axis=-1)
-    input_data = common.convolutional(input_data, (1, 1, 64, 128))
+    input_data = common.conv_bn_relu(input_data, (1, 1, 64, 128))
     input_data = tf.concat([route, input_data], axis=-1)
     input_data = tf.keras.layers.MaxPool2D(2, 2, 'same')(input_data)
 
-    input_data = common.convolutional(input_data, (3, 3, 128, 256))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 128, 256))
     route = input_data
     input_data = common.route_group(input_data, 2, 1)
-    input_data = common.convolutional(input_data, (3, 3, 128, 128))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 128, 128))
     route_1 = input_data
-    input_data = common.convolutional(input_data, (3, 3, 128, 128))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 128, 128))
     input_data = tf.concat([input_data, route_1], axis=-1)
-    input_data = common.convolutional(input_data, (1, 1, 128, 256))
+    input_data = common.conv_bn_relu(input_data, (1, 1, 128, 256))
     route_1 = input_data
     input_data = tf.concat([route, input_data], axis=-1)
     input_data = tf.keras.layers.MaxPool2D(2, 2, 'same')(input_data)
 
-    input_data = common.convolutional(input_data, (3, 3, 512, 512))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 512, 512))
 
     return route_1, input_data
 
 def darknet53_tiny(input_data):
-    input_data = common.convolutional(input_data, (3, 3, 3, 16))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 3, 16))
     input_data = tf.keras.layers.MaxPool2D(2, 2, 'same')(input_data)
-    input_data = common.convolutional(input_data, (3, 3, 16, 32))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 16, 32))
     input_data = tf.keras.layers.MaxPool2D(2, 2, 'same')(input_data)
-    input_data = common.convolutional(input_data, (3, 3, 32, 64))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 32, 64))
     input_data = tf.keras.layers.MaxPool2D(2, 2, 'same')(input_data)
-    input_data = common.convolutional(input_data, (3, 3, 64, 128))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 64, 128))
     input_data = tf.keras.layers.MaxPool2D(2, 2, 'same')(input_data)
-    input_data = common.convolutional(input_data, (3, 3, 128, 256))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 128, 256))
     route_1 = input_data
     input_data = tf.keras.layers.MaxPool2D(2, 2, 'same')(input_data)
-    input_data = common.convolutional(input_data, (3, 3, 256, 512))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 256, 512))
     input_data = tf.keras.layers.MaxPool2D(2, 1, 'same')(input_data)
-    input_data = common.convolutional(input_data, (3, 3, 512, 1024))
+    input_data = common.conv_bn_relu(input_data, (3, 3, 512, 1024))
 
     return route_1, input_data
 
 def mobilenet_v2(input_data, alpha=1.0):
     first_block_filters = common.make_divisible(32 * alpha, 8)
     # Group1 stride=2
-    x = common.convolutional(input_data, (3, 3, 3, first_block_filters),
+    x = common.conv_bn_relu(input_data, (3, 3, 3, first_block_filters),
                              downsample=True, activate_type='relu6')
     # Group2 stride=2
     x = common.inverted_res_block(
@@ -214,3 +214,22 @@ def mobilenet_v2(input_data, alpha=1.0):
         x, filters=320, alpha=alpha, stride=1, expansion=6, block_id=16)
     large_pred = x
     return medium_pred, large_pred
+
+def peleeNet(input_layer, use_stem_block=True):
+    n_dense_layers = [3,4,8,6]
+    bottleneck_width = [1,2,4,4]
+    # out_layers_channel = [128,256,512,704]
+    out_layers_channel = [64,128,256,512]
+    growth_rate = 32
+
+    x = common.stem_block(input_layer) if use_stem_block else input_layer
+    for i in range(4):
+        x = common.dense_block(x, n_dense_layers[i], growth_rate, bottleneck_width[i], db_prefix='stage{}_db'.format(i+1))
+        use_pooling = i < 3
+        x = common.transition_layer(x, out_layers_channel[i], use_pooling=use_pooling, prefix='stage{}_tl'.format(i+1))
+        if i == 2:
+            stage3_output = x
+        if i == 3:
+            stage4_output = x
+    return stage3_output, stage4_output
+

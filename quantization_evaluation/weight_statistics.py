@@ -6,9 +6,8 @@ import tensorflow as tf
 import numpy as np
 import cv2
 
-# modelFile = '../save/helmet/tiny_yolov3_helmet540_960_int8.tflite'
-ped_savedMolde = '../save/pedestrian/savedmodel/mobilenetv2_yolov3_540_960'
-hel_savedMolde = '../save/helmet/savedmodel/mobilenetv2_yolov3_540_960'
+ped_savedMolde = '../save/pedestrian/savedmodel/tiny_yolov3_540_960'
+hel_savedMolde = '../save/helmet/savedmodel/tiny_yolov3_540_960'
 
 gpus = tf.config.experimental.list_physical_devices(device_type="GPU")
 if gpus:
@@ -31,7 +30,8 @@ def savedModelAnalyze(writer, savedMolde, index):
     # print(layer)
     pass
 
+
 if __name__ == '__main__':
-    writer = tf.summary.create_file_writer('./tensorboard_tflite')
-    savedModelAnalyze(writer, ped_savedMolde, 1)
+    writer = tf.summary.create_file_writer('./tensorboard')
     savedModelAnalyze(writer, hel_savedMolde, 2)
+    savedModelAnalyze(writer, ped_savedMolde, 1)

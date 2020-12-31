@@ -43,6 +43,7 @@ class Dataset(object):
     def __next__(self):
         self.train_output_sizes = []
         for i in range(len(self.strides)):
+            # self.train_output_sizes.append(np.floor(self.train_input_size / self.strides[i]).astype(np.uint8))    #向下取整
             self.train_output_sizes.append(np.ceil(self.train_input_size / self.strides[i]).astype(np.uint8))    #向上取整
 
         batch_image = np.zeros((self.batch_size, self.train_input_size[0], self.train_input_size[1], 3),
@@ -137,14 +138,14 @@ class Dataset(object):
     def str_to_int(x):
         return int(float(x))
 
-    def parse_line(self, annoLine):
-        split_line = annoLine.split(" ")        #[num, name, W, H, Xmin, Ymin, Xmax, Ymax, class]
-        # image_height, image_width = split_line[2:4]
-        # image_height, image_width = int(float(image_height)), int(float(image_width))
+    def parse_line(self, annoLine, withWH=True):
+        skip = 3 if withWH else 1
+        split_line = annoLine.split(" ")        #[name Xmin Ymin Xmax Ymax class] or [name W H Xmin Ymin Xmax Ymax class]
         image_name = split_line[0]
         # print("Reading {}".format(image_name))
-        box_num = (len(split_line) - 3) / 5
-        split_line = split_line[3:]
+        assert (len(split_line) - skip) % 5 == 0
+        box_num = (len(split_line) - skip) / 5
+        split_line = split_line[skip:]
         boxes = []
         for i in range(int(box_num)):
             box_xmin = int(float(split_line[i * 5]))
@@ -154,6 +155,7 @@ class Dataset(object):
             class_id = int(split_line[i * 5 + 4])
             boxes.append([box_xmin, box_ymin, box_xmax, box_ymax, class_id])
         return image_name, boxes
+
 
     def parse_annotation(self, annotation):
         image_name, bboxes = self.parse_line(annotation)

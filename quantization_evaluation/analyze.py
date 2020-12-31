@@ -5,40 +5,35 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+
+
+# modelFile = 'save/pedestrian/pedestrians_tiny_yolov3_540_960.tflite'
+# IOQmodelFile = 'save/pedestrian/pedestrians_tiny_yolov3_540_960_epoch8.tflite'
+modelFile = 'save/pedestrian/pedestrians_mobilenetv2_yolov3_540_960.tflite'
+IOQmodelFile = 'save/pedestrian/pedestrians_mobilenetv2_yolov3_540_960_IO_fp32.tflite'
 
 # modelFile = 'save/helmet/helmet_mobilenetv2_yolov3_540_960.tflite'
 # IOQmodelFile = 'save/helmet/helmet_mobilenetv2_yolov3_540_960_IO_fp32.tflite'
-
-modelFile = 'save/pedestrian/pedestrians_tiny_yolov4_540_960.tflite'
-IOQmodelFile = 'save/pedestrian/pedestrians_tiny_yolov4_540_960_IO_uint8.tflite'
-
-#modelFile = 'save/snow_panther/snow_panther_tiny_yolov3_540_960.tflite'
-#IOQmodelFile = 'save/snow_panther/snow_panther_tiny_yolov3_540_960_IO_uint8.tflite'
-
 # modelFile = 'save/helmet/helmet_tiny_yolov3_helmet540_960.tflite'
-# IOQmodelFile = 'save/helmet/helmet_tiny_yolov3_helmet540_960_IO_fp32.tflite'
+# IOQmodelFile = 'save/helmet/helmet_tiny_yolov3_helmet540_960.tflite'
 
+tensorIndex = [2, 3, 4, 35, 29]
+nodeIndex = [0, 1, 2, 3]
 
-tiny_yolo_layerName = [
+weightTensorName= [
     'model/conv2d/Conv2D/ReadVariableOp/resource',
     'model/conv2d/Conv2D_bias',
-    'model/max_pooling2d/MaxPool',
     'model/conv2d_1/Conv2D/ReadVariableOp/resource',
     'model/conv2d_1/Conv2D_bias',
-    'model/max_pooling2d_1/MaxPool',
     'model/conv2d_2/Conv2D/ReadVariableOp/resource',
     'model/conv2d_2/Conv2D_bias',
-    'model/max_pooling2d_2/MaxPool',
     'model/conv2d_3/Conv2D/ReadVariableOp/resource',
     'model/conv2d_3/Conv2D_bias',
-    'model/max_pooling2d_3/MaxPool',
     'model/conv2d_4/Conv2D/ReadVariableOp/resource',
     'model/conv2d_4/Conv2D_bias',
-    'model/max_pooling2d_4/MaxPool',
     'model/conv2d_5/Conv2D/ReadVariableOp/resource',
     'model/conv2d_5/Conv2D_bias',
-    'model/max_pooling2d_5/MaxPool',
     'model/conv2d_6/Conv2D/ReadVariableOp/resource',
     'model/conv2d_6/Conv2D_bias',
     'model/conv2d_7/Conv2D/ReadVariableOp/resource',
@@ -49,34 +44,37 @@ tiny_yolo_layerName = [
     'model/conv2d_9/Conv2D_bias',
     'model/conv2d_10/Conv2D/ReadVariableOp/resource',
     'model/conv2d_10/Conv2D_bias',
-    'model/tf_op_layer_resize/ResizeNearestNeighbor/resize/ResizeNearestNeighbor',
-    # 'model/tf_op_layer_resize/ResizeBilinear/resize/ResizeBilinear',
-    # 'model/tf_op_layer_concat/concat',
-    'model/concatenate/concat',
-    # 'model/tf_op_layer_add/add',
     'model/conv2d_11/Conv2D/ReadVariableOp/resource',
     'model/conv2d_11/Conv2D_bias',
     'model/conv2d_12/Conv2D/ReadVariableOp/resource',
-    'model/conv2d_12/Conv2D_bias',
+    'model/conv2d_12/Conv2D_bias'
+]
+
+tiny_yolo_layerName = [
+    'model/re_lu/Relu6',
+    'model/max_pooling2d/MaxPool',
+    'model/re_lu_1/Relu6',
+    'model/max_pooling2d_1/MaxPool',
+    'model/re_lu_2/Relu6',
+    'model/max_pooling2d_2/MaxPool',
+    'model/re_lu_3/Relu6',
+    'model/max_pooling2d_3/MaxPool',
+    'model/re_lu_4/Relu6',
+    'model/max_pooling2d_4/MaxPool',
+    'model/re_lu_5/Relu6',
+    'model/max_pooling2d_5/MaxPool',
+    'model/re_lu_6/Relu6',
+    'model/re_lu_7/Relu6',
+    'model/re_lu_8/Relu6',
+    'model/re_lu_9/Relu6',
+    'model/re_lu_10/Relu6',
+    'model/tf_op_layer_resize/ResizeNearestNeighbor/resize/ResizeNearestNeighbor',
+    # 'model/tf_op_layer_concat/concat',
+    'model/concatenate/concat',
     'Identity',
     'Identity_1'
 ]
 
-mobilenet_layer = [
-    'model/conv2d_5/Conv2D/ReadVariableOp/resource',
-    'model/conv2d_5/Conv2D_bias',
-    'model/tf_op_layer_resize/ResizeNearestNeighbor/resize/ResizeNearestNeighbor',
-    'model/tf_op_layer_resize/ResizeNearestNeighbor/resize/ResizeNearestNeighbor/size',
-    'model/conv2d_2/Conv2D/ReadVariableOp/resource',
-    'model/conv2d_2/Conv2D_bias',
-    'model/tf_op_layer_concat/concat',
-    'model/conv2d_6/Conv2D/ReadVariableOp/resource',
-    'model/conv2d_6/Conv2D_bias',
-    'model/conv2d_7/Conv2D/ReadVariableOp/resource',
-    'model/conv2d_7/Conv2D_bias',
-    'Identity',
-    'Identity_1'
-]
 gpus = tf.config.experimental.list_physical_devices(device_type="GPU")
 if gpus:
     tf.config.experimental.set_visible_devices(devices=gpus[:2], device_type='GPU')
@@ -100,6 +98,23 @@ def inference(interpreter, imgMat):
     # Run model
     interpreter.invoke()
 
+def getTensorByIndex(interpreter, index):
+    # tensorDetels = interpreter._get_tensor_details(index)
+    # tensor = interpreter.get_tensor(index)
+    opDetels = interpreter._get_op_details(index)
+    # if tensor['quantization_parameters'] != (0, 0):
+    # # if tensor['quantization'] != (0, 0):
+    #     print('quantization_parameters')
+    #     scale = tensor['quantization_parameters']['scales']
+
+    #     zero = tensor['quantization_parameters']['zero_points']
+    #     outINT8 = (tensor.astype(np.float32) - zero) * scale
+    return opDetels
+
+def tensorCompilerByIndex(interpreterTFLite, interpreterPTQ):
+    allTensorFP32 = interpreterTFLite.get_tensor_details()
+    allTensorINT8 = interpreterPTQ.get_tensor_details()
+
 def layerOutputCompile(interpreterTFLite, interpreterPTQ):
     allTensorFP32 = interpreterTFLite.get_tensor_details()
     allTensorINT8 = interpreterPTQ.get_tensor_details()
@@ -114,11 +129,11 @@ def layerOutputCompile(interpreterTFLite, interpreterPTQ):
         outFP32 = interpreterTFLite.get_tensor(tensorFP32['index'])
         outFP32 = outFP32.astype(np.float32)
 
-        outINT8 = interpreterPTQ.get_tensor(tensorINT8['index'])
+        outINT8 = interpreterPTQ.get_tensor(tensorINT8['index']).astype(np.float32)
         if tensorINT8['quantization'] != (0, 0):
             print('quantization')
             scale, zero = tensorINT8['quantization']
-            outINT8 = (outINT8.astype(np.float32) - zero) * scale
+            outINT8 = (outINT8 - zero) * scale
         d1 = cosine_distance(outFP32.flatten(), outINT8.flatten())
 
         print(tensorFP32['name'], ':', d1)
@@ -141,17 +156,18 @@ def oneLayerCompile(layerName, interpreterTFLite, interpreterPTQ):
     outFP32 = interpreterTFLite.get_tensor(tensorFP32['index'])
     outFP32 = outFP32.astype(np.float32)
 
-    outINT8 = interpreterPTQ.get_tensor(tensorINT8['index'])
+    outINT8 = interpreterPTQ.get_tensor(tensorINT8['index']).astype(np.float32)
     if tensorINT8['quantization'] != (0, 0):
         print('quantization')
         scale, zero = tensorINT8['quantization']
-        outINT8 = (outINT8.astype(np.float32) - zero) * scale
+        outINT8 = (outINT8 - zero) * scale
 
     outFP32 = outFP32.flatten()
     outINT8 = outINT8.flatten()
-    # np.save('./{}_FP32'.format(layerName), outFP32)
-    # np.save('./{}_INT8'.format(layerName), outINT8)
-    return cosine_distance(outFP32, outINT8)
+
+    print(layerName, ':', cosine_distance(outFP32, outINT8))
+    print('FP32: (', outFP32.min(), ",", outFP32.max(), ')')
+    print('INT8: (', outINT8.min(), ",", outINT8.max(), ')')
     # return mean_squared_error(outFP32, outINT8)
 
 def inputDataCompile(interpreterTFLite, interpreterPTQ):
@@ -209,31 +225,48 @@ def cosine_distance(a, b):
         result = 0.0
     else:
         result = num / s
-    return 1 - result
+    return result
 
+def weightHistograms(interpreter):
+    writer = tf.summary.create_file_writer('tools/tensorboard')
+    for tensorName in weightTensorName:
+        for i, interp in enumerate(interpreter):
+            allTensor = interp.get_tensor_details()
+            tensor = None
+            for tmpTensor in allTensor:
+                if tmpTensor['name'] == tensorName:
+                    tensor = tmpTensor
+            assert tensor != None
+
+            out = interp.get_tensor(tensor['index']).astype(np.float32)
+            with writer.as_default():
+                tf.summary.histogram(tensorName, out, i)
+            writer.flush()
 
 if __name__ == '__main__':
     # featureCompile()
     # exit()
     imgMat = cv2.imread('tools/test.jpg')
+    # imgMat = cv2.imread('tools/test_480_640.jpg')
     imgMat = np.expand_dims(imgMat, 0)
     interpreterTFLite = tflite.Interpreter(model_path=modelFile)
     interpreterTFLite.allocate_tensors()
+    inference(interpreterTFLite, np.copy(imgMat))
+
     interpreterPTQ = tflite.Interpreter(model_path=IOQmodelFile)
     interpreterPTQ.allocate_tensors()
-    inference(interpreterTFLite, np.copy(imgMat))
     inference(interpreterPTQ, np.copy(imgMat))
+    # weightHistograms([interpreterTFLite, interpreterPTQ])
+    # print(interpreterPTQ._get_ops_details())
     # data_comp(interpreterPTQ)
+    # inputDataCompile(interpreterTFLite, interpreterPTQ)
     # print('iputdata: ', inputDataCompile(interpreterTFLite, interpreterPTQ))
 
-    # layerName = ['model/tf_op_layer_resize/ResizeNearestNeighbor/resize/ResizeNearestNeighbor',
-    #             'model/tf_op_layer_resize/ResizeNearestNeighbor/resize/ResizeNearestNeighbor/size',
-    #             'model/tf_op_layer_concat/concat',]
-    # layerName = ['Identity', 'Identity_1']
-    # for name in tiny_yolo_layerName:
-    #     d = oneLayerCompile(name, interpreterTFLite, interpreterPTQ)
-    #     print(name, ':', d)
+    # for name in weightTensorName:
+    #     oneLayerCompile(name, interpreterTFLite, interpreterPTQ)
 
     layerOutputCompile(interpreterTFLite, interpreterPTQ)
+    # for i in nodeIndex:
+    #     getTensorByIndex(interpreterTFLite, i)
     # tflite_analyze_tflite_ioq(imgMat)
     # tflite_analyze_tflite(imgMat, interpreter)
