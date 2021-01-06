@@ -10,22 +10,22 @@ import os
 from converter.utils import get_graph
 from tensorflow.python.saved_model import signature_constants
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 # gpus = tf.config.experimental.list_physical_devices(device_type="GPU")
 # if gpus:
 #     tf.config.experimental.set_visible_devices(devices=gpus[1], device_type='GPU')
 #     # tf.config.experimental.set_memory_growth(device=gpus[0], enable=True)
 
 # target = 'helmet'
-target = 'pedestrians'
-# target = 'head'
+# target = 'pedestrians'
+target = 'head'
 
 # backbone = 'mobilenetv2'
 # backbone = 'tiny-yolov3'
-# backbone = 'yolov3'
-backbone = 'peleenet'
+backbone = 'yolov3'
+# backbone = 'peleenet'
 
-flags.DEFINE_string('quantize_mode',                      'int8',            'fp32 or fp16 or int8 or None')
+flags.DEFINE_string('quantize_mode',                      'fp16',            'fp32 or fp16 or int8 or None')
 
 if target == 'helmet':
     flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
@@ -52,6 +52,10 @@ elif target == 'head':
     if backbone == 'peleenet':
         flags.DEFINE_string('trtPrefix', 'save/head/tensorrt/head_peleenet_yolov3_540_960', 'path to save tflite')
         flags.DEFINE_string('savePrefix', 'save/head/savedmodel/peleenet_yolov3_540_960', 'path to savedmodel')
+    elif backbone == 'yolov3':
+        flags.DEFINE_string('trtPrefix', 'save/head/tensorrt/head_yolov3_540_960',          'path to save tflite')
+        flags.DEFINE_string('savePrefix', 'save/head/savedmodel/yolov3_540_960', 'path to savedmodel')
+
 
 # Define a generator function that yields input data, and run INT8
 # calibration with the data. All input data should have the same shape.
@@ -70,7 +74,7 @@ def representative_data_gen(imgCnt=0):
     imgMat = imgMat[np.newaxis, :, :, :]
     yield [tf.constant(imgMat.astype(np.float32))]
 
-def convert_tf2_1():
+def convert_tf2_3():
     params = trt.DEFAULT_TRT_CONVERSION_PARAMS
     # 分配给tensorRT的显存大小
     params._replace(max_workspace_size_bytes=4000000000)
@@ -152,7 +156,7 @@ def convert_tf2_4():
     converter.save(FLAGS.trtPrefix)
 
 def main(_argv):
-    convert_tf2_1()
+    convert_tf2_3()
 
 if __name__ == '__main__':
     try:

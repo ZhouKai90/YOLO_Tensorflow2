@@ -12,13 +12,13 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '3'
     # tf.config.experimental.set_memory_growth(device=gpus[1], enable=True)
 
 # target = 'helmet'
-target = 'pedestrians'
-# target = 'head'
+# target = 'pedestrians'
+target = 'head'
 
 # backbone = 'mobilenetv2'
 # backbone = 'tiny-yolov3'
-# backbone = 'yolov3'
-backbone = 'peleenet'
+backbone = 'yolov3'
+# backbone = 'peleenet'
 
 if target == 'helmet':
     flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
@@ -56,6 +56,10 @@ elif target == 'head':
     if backbone == 'peleenet':
         flags.DEFINE_string('ckpt', 'save/head/ckpt/peleenet_yolov3_540_960/model_final', 'path to weights file')
         flags.DEFINE_string('savePrefix', 'save/head/savedmodel/peleenet_yolov3_540_960', 'path to savedmodel')
+    elif backbone == 'yolov3':
+        flags.DEFINE_string('ckpt',         'save/head/ckpt/yolov3_540_960/model_final',  'path to weights file')
+        flags.DEFINE_string('savePrefix',   'save/head/savedmodel/yolov3_540_960',          'path to savedmodel')
+
 
 
 def main(_argv):

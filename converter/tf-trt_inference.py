@@ -9,22 +9,18 @@ from tensorflow.python.saved_model import tag_constants
 
 gpus = tf.config.experimental.list_physical_devices(device_type="GPU")
 if gpus:
-    tf.config.experimental.set_visible_devices(devices=gpus[1], device_type='GPU')
+    tf.config.experimental.set_visible_devices(devices=gpus[0], device_type='GPU')
     # tf.config.experimental.set_memory_growth(device=gpus[0], enable=True)
     # 对需要进行限制的GPU进行设置
-    tf.config.experimental.set_virtual_device_configuration(gpus[1],
+    tf.config.experimental.set_virtual_device_configuration(gpus[0],
                                                             [tf.config.experimental.VirtualDeviceConfiguration(
                                                                 memory_limit=2048)])
 
 # detection_type = 'helmet'
-detection_type = 'pedestrian'
-# detection_type = 'head'
+# detection_type = 'pedestrian'
+detection_type = 'head'
 
 parser = argparse.ArgumentParser("Run TF-Lite YOLO-V3 Tiny inference.")
-
-# stride = [16,32]
-# stride = [8,16,32]
-stride = [16, 32, 64]
 
 if detection_type == 'helmet':
     parser.add_argument("--model", default='save/helmet/helmet_tiny_yolov3_540_960.tflite',
@@ -39,7 +35,7 @@ elif detection_type == 'pedestrian':
                         help="Anchors file.")
     parser.add_argument("--classes", default='data/classes/pedestrian.names', type=str, help="Classes (.names) file.")
 elif detection_type == 'head':
-    parser.add_argument("--model", default='save/head/tensorrt/head_peleenet_yolov3_540_960_int8',
+    parser.add_argument("--model", default='save/head/tensorrt/head_yolov3_540_960_int8',
                         type=str, help="Model to load.")
     parser.add_argument("--anchors", default='data/anchors/head_crowdhuman_540_960_9_anchors.txt',
                         type=str, help="Anchors file.")
@@ -51,10 +47,10 @@ else:
 
 parser.add_argument("--BGR2RGB", default=False, type=bool, help="BGR2RGB.")
 
-parser.add_argument("--score_threshold", help="Detection threshold.", type=float, default=0.5)
+parser.add_argument("--score_threshold", help="Detection threshold.", type=float, default=0.4)
 parser.add_argument("--nms_threshold", help="NMS threshold.", type=float, default=0.45)
 
-parser.add_argument("--image", default='data/images/pedestrian/', type=str, help="Run inference on image.")
+parser.add_argument("--image", default='data/images/head/', type=str, help="Run inference on image.")
 parser.add_argument("--deteciton_out", default='data/detection/test/', type=str, help="detection out to save.")
 parser.add_argument("--rtsp_url", default='rtsp://admin:starblaze123@172.16.65.40:554/h264/1/main/av_stream',
                     type=str, help="rtsp url.")

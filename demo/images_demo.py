@@ -18,17 +18,17 @@ if gpus:
                                                             [tf.config.experimental.VirtualDeviceConfiguration(
                                                                 memory_limit=2048)])
 
-# flags.DEFINE_string('savedmodel',   'save/head/savedmodel/peleenet_yolov3_540_960.h5',          'path to savedmodel')
-# flags.DEFINE_string('classes_file',        'data/classes/head.names',                               'classes file')
+flags.DEFINE_string('savedmodel',   'save/head/savedmodel/yolov3_540_960.h5',          'path to savedmodel')
+flags.DEFINE_string('classes_file',        'data/classes/head.names',                               'classes file')
 
-flags.DEFINE_string('savedmodel',   'save/pedestrian/savedmodel/peleenet_yolov3_540_960.h5',          'path to savedmodel')
-flags.DEFINE_string('classes_file',        'data/classes/pedestrian.names',                               'classes file')
+# flags.DEFINE_string('savedmodel',   'save/pedestrian/savedmodel/peleenet_yolov3_540_960.h5',          'path to savedmodel')
+# flags.DEFINE_string('classes_file',        'data/classes/pedestrian.names',                               'classes file')
 
 # flags.DEFINE_string('savedmodel',   'save/helmet/savedmodel/mobilenetv2_yolov3_540_960',          'path to savedmodel')
 # flags.DEFINE_string('classes_file',        'data/classes/helmet.names',                               'classes file')
 
 flags.DEFINE_string('detection_out_dir',  'data/detection/test/',                     'images to quan')
-flags.DEFINE_string('images_dir',  'data/images/pedestrian/',                     'images to quan')
+flags.DEFINE_string('images_dir',  'data/images/head/',                     'images to quan')
 flags.DEFINE_multi_integer('input_size',  [540, 960],                       'define input size of export model')
 flags.DEFINE_float('score_thres',   0.4,                                    'define score threshold')
 flags.DEFINE_float('nms_thres',   0.45,                                    'define nms threshold')
