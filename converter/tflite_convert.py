@@ -9,7 +9,7 @@ import random
 from converter.utils import  get_graph
 from core.utils import image_preprocess
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 # gpus = tf.config.experimental.list_physical_devices(device_type="GPU")
 # if gpus:
 #     tf.config.experimental.set_visible_devices(devices=gpus[-1], device_type='GPU')
@@ -21,10 +21,10 @@ target = 'head'
 
 # backbone = 'mobilenetv2'
 # backbone = 'tiny-yolov3'
-# backbone = 'yolov3'
-backbone = 'peleenet'
+backbone = 'yolov3'
+# backbone = 'peleenet'
 
-flags.DEFINE_string('quantization_type',                  'IO',              'DR for dynamic_range,  IO for integer_only, NQ for not quantization, FI for full integer')
+flags.DEFINE_string('quantization_type',                  'NQ',              'DR for dynamic_range,  IO for integer_only, NQ for not quantization, FI for full integer')
 flags.DEFINE_list('tensor_type',             [tf.uint8, tf.float32],            'fp32 or uint8 for input and output tensor date type')
 
 if target == 'helmet':
@@ -69,6 +69,11 @@ elif target == 'head':
     if backbone == 'peleenet':
         flags.DEFINE_string('ckpt', 'save/head/ckpt/peleenet_yolov3_540_960/model_final', 'path to weights file')
         flags.DEFINE_string('tflitePrefix', 'save/head/head_peleenet_yolov3_540_960', 'path to save tflite')
+    elif backbone == 'yolov3':
+        flags.DEFINE_string('ckpt', 'save/head/ckpt/yolov3_540_960/model_final', 'path to weights file')
+        flags.DEFINE_string('tflitePrefix', 'save/head/head_yolov3_540_960',          'path to save tflite')
+        flags.DEFINE_string('savedModelDir',   'save/head/savedmodel/yolov3_540_960_deploy',          'path to savedmodel')
+
 
 def representative_dataset_gen_img(imgCnt=0):
     imgDir = os.path.abspath(FLAGS.quan_images)
@@ -114,12 +119,12 @@ def convert_to_tflite(converter, TFLitePrefix):
     open(TFLiteFile, "wb").write(TFLiteModel)
 
 '''
-这个地方直接使用TF2.2中的TOCO进行量化，输入和输出为了兼容多个平台，就算指定了量化为int8，最后也只会是fp32.
+这个地方直接使用TF2.1中的TOCO进行量化，输入和输出为了兼容多个平台，就算指定了量化为int8，最后也只会是fp32.
 在TF2.3及以上的版本，量化工具升级为MLIR，这个时候输入和输出也会量化为int8.
 现在暂时使用v1中的版本能满足输入输出量化为int8.
 '''
 def convert_tflite_from_savedmodel(TFLiteFile, model, savedModelDir=None):
-    if savedModelDir is None:
+    if savedModelDir == None:
         savedModelDir = "save/tmp/savedmodel"
         model.save(savedModelDir)
     converter = tf.lite.TFLiteConverter.from_saved_model(savedModelDir)
@@ -140,8 +145,8 @@ def main(_argv):
     model.load_weights(FLAGS.ckpt)
     # model.load_weights(tf.train.latest_checkpoint(FLAGS.ckpt))
 
-    convert_tflite_from_savedmodel(FLAGS.tflitePrefix, model)      #转换得到的tflite的input和output为fp32
-    # convert_tflite_from_keras(FLAGS.tflitePrefix, model)             #转换得到的tflite input和output为uint8
+    # convert_tflite_from_savedmodel(FLAGS.tflitePrefix, None, savedModelDir=FLAGS.savedModelDir)      #转换得到的tflite的input和output为fp32
+    convert_tflite_from_savedmodel(FLAGS.tflitePrefix, model)             #转换得到的tflite input和output为uint8
 
 
 if __name__ == '__main__':

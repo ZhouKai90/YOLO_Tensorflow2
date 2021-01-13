@@ -48,11 +48,11 @@ else:
 
 parser.add_argument("--BGR2RGB", default=False, type=bool, help="BGR2RGB.")
 
-parser.add_argument("--score_threshold", help="Detection threshold.", type=float, default=0.3)
+parser.add_argument("--score_threshold", help="Detection threshold.", type=float, default=0.4)
 parser.add_argument("--nms_threshold", help="NMS threshold.", type=float, default=0.45)
 
-parser.add_argument("--image", default='data/images/head/', type=str, help="Run inference on image.")
-parser.add_argument("--deteciton_out", default='data/detection/test/', type=str, help="detection out to save.")
+parser.add_argument("--image", default='data/images/testhead/', type=str, help="Run inference on image.")
+parser.add_argument("--deteciton_out", default='data/images/detection_out/test/', type=str, help="detection out to save.")
 parser.add_argument("--rtsp_url", default='rtsp://admin:starblaze123@172.16.65.40:554/h264/1/main/av_stream',
                     type=str, help="rtsp url.")
 args = parser.parse_args()
@@ -145,7 +145,7 @@ def image_inf(interpreter):
         bboxes = inference(interpreter, imgMat.shape[:2], imgData, anchors, stride, len(classes))
         if len(bboxes) > 0:
             print('bbox detected: ', len(bboxes))
-            imgMat = draw_bbox(imgMat, bboxes, args.classes, False)
+            imgMat = draw_bbox(imgMat, bboxes, args.classes, True)
             cv2.imwrite(args.deteciton_out+img, imgMat)
 
 def video_inf(interpreter, path):

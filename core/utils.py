@@ -83,7 +83,7 @@ def image_preprocess(image, target_size, gt_boxes=None, dtype='fp32'):
     dw, dh = (iw - nw) // 2, (ih-nh) // 2
     image_paded[dh:nh+dh, dw:nw+dw, :] = image_resized
     if dtype == 'fp32':
-        image_paded = image_paded / 255.
+        image_paded = image_paded.astype(np.float32) / 255.
 
     if gt_boxes is None:
         return image_paded
